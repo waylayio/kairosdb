@@ -60,8 +60,10 @@ public class KairosDatastoreTest
 	public void test_query_nullMetricInvalid() throws KairosDBException
 	{
 		TestDatastore testds = new TestDatastore();
+		TestDataPointFactory dataPointFactory = new TestDataPointFactory();
+		CachingSearchResultFactory searchResultFactory = new CachingSearchResultFactory(dataPointFactory, testds, false);
 		KairosDatastore datastore = new KairosDatastore(testds, new QueryQueuingManager(1, "hostname"),
-				new TestDataPointFactory(), false);
+				dataPointFactory, searchResultFactory);
 
 		datastore.createQuery(null);
 	}
@@ -70,8 +72,11 @@ public class KairosDatastoreTest
 	public void test_query_sumAggregator() throws KairosDBException
 	{
 		TestDatastore testds = new TestDatastore();
+		TestDataPointFactory dataPointFactory = new TestDataPointFactory();
+		CachingSearchResultFactory searchResultFactory = new CachingSearchResultFactory(dataPointFactory, testds, false);
 		KairosDatastore datastore = new KairosDatastore(testds, new QueryQueuingManager(1, "hostname"),
-				new TestDataPointFactory(), false);
+				dataPointFactory, searchResultFactory);
+
 		QueryMetric metric = new QueryMetric(1L, 1, "metric1");
 		metric.addAggregator(aggFactory.createFeatureProcessor("sum"));
 
@@ -99,8 +104,10 @@ public class KairosDatastoreTest
 	public void test_query_noAggregator() throws KairosDBException
 	{
 		TestDatastore testds = new TestDatastore();
+		TestDataPointFactory dataPointFactory = new TestDataPointFactory();
+		CachingSearchResultFactory searchResultFactory = new CachingSearchResultFactory(dataPointFactory, testds, false);
 		KairosDatastore datastore = new KairosDatastore(testds, new QueryQueuingManager(1, "hostname"),
-				new TestDataPointFactory(), false);
+				dataPointFactory, searchResultFactory);
 		QueryMetric metric = new QueryMetric(1L, 1, "metric1");
 
 		DatastoreQuery dq = datastore.createQuery(metric);
@@ -173,11 +180,13 @@ public class KairosDatastoreTest
 	public void test_cleanCacheDir() throws IOException, DatastoreException
 	{
 		TestDatastore testds = new TestDatastore();
+		TestDataPointFactory dataPointFactory = new TestDataPointFactory();
+		CachingSearchResultFactory searchResultFactory = new CachingSearchResultFactory(dataPointFactory, testds, false);
 		KairosDatastore datastore = new KairosDatastore(testds, new QueryQueuingManager(1, "hostname"),
-				new TestDataPointFactory(), false);
+				dataPointFactory, searchResultFactory);
 
 		// Create files in the cache directory
-		File cacheDir = new File(datastore.getCacheDir());
+		File cacheDir = searchResultFactory.getCacheDir();
 		File file1 = new File(cacheDir, "testFile1");
 		file1.createNewFile();
 		File file2 = new File(cacheDir, "testFile2");
@@ -186,7 +195,7 @@ public class KairosDatastoreTest
 		File[] files = cacheDir.listFiles();
 		assertTrue(files.length > 0);
 
-		datastore.cleanCacheDir(false);
+		searchResultFactory.cleanCacheDir(false);
 
 		assertFalse(file1.exists());
 		assertFalse(file2.exists());
@@ -195,8 +204,11 @@ public class KairosDatastoreTest
 	@Test
 	public void test_groupByTypeAndTag_SameTagValue() throws DatastoreException, FormatterException
 	{
-		TestKairosDatastore datastore = new TestKairosDatastore(new TestDatastore(), new QueryQueuingManager(1, "hostname"),
-				new TestDataPointFactory());
+		TestDatastore testds = new TestDatastore();
+		TestDataPointFactory dataPointFactory = new TestDataPointFactory();
+		CachingSearchResultFactory searchResultFactory = new CachingSearchResultFactory(dataPointFactory, testds, false);
+		TestKairosDatastore datastore = new TestKairosDatastore(testds, new QueryQueuingManager(1, "hostname"),
+				dataPointFactory, searchResultFactory);
 
 		TagGroupBy groupBy = new TagGroupBy("tag1", "tag2");
 		List<DataPointRow> rows = new ArrayList<>();
@@ -226,8 +238,11 @@ public class KairosDatastoreTest
 	@Test
 	public void test_groupByTypeAndTag_DifferentTagValues() throws DatastoreException, FormatterException
 	{
-		TestKairosDatastore datastore = new TestKairosDatastore(new TestDatastore(), new QueryQueuingManager(1, "hostname"),
-				new TestDataPointFactory());
+		TestDatastore testds = new TestDatastore();
+		TestDataPointFactory dataPointFactory = new TestDataPointFactory();
+		CachingSearchResultFactory searchResultFactory = new CachingSearchResultFactory(dataPointFactory, testds, false);
+		TestKairosDatastore datastore = new TestKairosDatastore(testds, new QueryQueuingManager(1, "hostname"),
+				dataPointFactory, searchResultFactory);
 
 		TagGroupBy groupBy = new TagGroupBy("tag1", "tag2");
 		List<DataPointRow> rows = new ArrayList<>();
@@ -257,8 +272,11 @@ public class KairosDatastoreTest
 	@Test
 	public void test_groupByTypeAndTag_MultipleTags() throws DatastoreException, FormatterException
 	{
-		TestKairosDatastore datastore = new TestKairosDatastore(new TestDatastore(), new QueryQueuingManager(1, "hostname"),
-				new TestDataPointFactory());
+		TestDatastore testds = new TestDatastore();
+		TestDataPointFactory dataPointFactory = new TestDataPointFactory();
+		CachingSearchResultFactory searchResultFactory = new CachingSearchResultFactory(dataPointFactory, testds, false);
+		TestKairosDatastore datastore = new TestKairosDatastore(testds, new QueryQueuingManager(1, "hostname"),
+				dataPointFactory, searchResultFactory);
 
 		/*
 		The order of the returned data must be stored first by tag1 and
@@ -315,10 +333,10 @@ public class KairosDatastoreTest
 	private static class TestKairosDatastore extends KairosDatastore
 	{
 
-		public TestKairosDatastore(Datastore datastore, QueryQueuingManager queuingManager,
-		                           KairosDataPointFactory dataPointFactory) throws DatastoreException
+		TestKairosDatastore(Datastore datastore, QueryQueuingManager queuingManager,
+				KairosDataPointFactory dataPointFactory, SearchResultFactory searchResultFactory) throws DatastoreException
 		{
-			super(datastore, queuingManager, dataPointFactory, false);
+			super(datastore, queuingManager, dataPointFactory, searchResultFactory);
 		}
 	}
 

@@ -25,12 +25,14 @@ import org.kairosdb.core.datapoints.LongDataPoint;
 import org.kairosdb.core.datapoints.LongDataPointFactory;
 import org.kairosdb.core.datapoints.LongDataPointFactoryImpl;
 import org.kairosdb.core.datapoints.StringDataPointFactory;
+import org.kairosdb.core.datastore.CachingSearchResultFactory;
 import org.kairosdb.core.datastore.Datastore;
 import org.kairosdb.core.datastore.DatastoreMetricQuery;
 import org.kairosdb.core.datastore.KairosDatastore;
 import org.kairosdb.core.datastore.QueryCallback;
 import org.kairosdb.core.datastore.QueryPluginFactory;
 import org.kairosdb.core.datastore.QueryQueuingManager;
+import org.kairosdb.core.datastore.SearchResultFactory;
 import org.kairosdb.core.datastore.ServiceKeyStore;
 import org.kairosdb.core.datastore.ServiceKeyValue;
 import org.kairosdb.core.datastore.TagSet;
@@ -108,6 +110,7 @@ public abstract class ResourceBase
                 bind(String.class).annotatedWith(Names.named(WebServer.JETTY_WEB_ROOT_PROPERTY)).toInstance("bogus");
                 bind(Datastore.class).toInstance(datastore);
                 bind(ServiceKeyStore.class).toInstance(datastore);
+                bind(SearchResultFactory.class).to(CachingSearchResultFactory.class).in(Singleton.class);
                 bind(KairosDatastore.class).in(Singleton.class);
                 bind(FeaturesResource.class).in(Singleton.class);
                 bind(FeatureProcessor.class).to(KairosFeatureProcessor.class);
@@ -152,6 +155,7 @@ public abstract class ResourceBase
 
             }
         });
+
         server = injector.getInstance(WebServer.class);
         server.start();
 

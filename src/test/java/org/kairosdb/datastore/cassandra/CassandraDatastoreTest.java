@@ -30,6 +30,7 @@ import org.kairosdb.core.KairosDataPointFactory;
 import org.kairosdb.core.TestDataPointFactory;
 import org.kairosdb.core.datapoints.LongDataPoint;
 import org.kairosdb.core.datastore.CachedSearchResult;
+import org.kairosdb.core.datastore.CachingSearchResultFactory;
 import org.kairosdb.core.datastore.DataPointGroup;
 import org.kairosdb.core.datastore.DataPointRow;
 import org.kairosdb.core.datastore.DatastoreMetricQuery;
@@ -309,9 +310,11 @@ public class CassandraDatastoreTest extends DatastoreTestHelper
 					}
 				});
 
+		CachingSearchResultFactory searchResultFactory = new CachingSearchResultFactory(dataPointFactory, s_datastore, false);
 		DatastoreTestHelper.s_datastore = new KairosDatastore(s_datastore,
 				new QueryQueuingManager(1, "hostname"),
-				dataPointFactory, false);
+				dataPointFactory,
+				searchResultFactory);
 
 		s_eventBus.register(s_datastore);
 

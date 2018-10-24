@@ -54,10 +54,13 @@ import org.kairosdb.core.datapoints.LongDataPointFactory;
 import org.kairosdb.core.datapoints.LongDataPointFactoryImpl;
 import org.kairosdb.core.datapoints.NullDataPointFactory;
 import org.kairosdb.core.datapoints.StringDataPointFactory;
+import org.kairosdb.core.datastore.CachingSearchResultFactory;
 import org.kairosdb.core.datastore.GuiceQueryPluginFactory;
 import org.kairosdb.core.datastore.KairosDatastore;
+import org.kairosdb.core.datastore.QueryLevelCachingSearchResultFactory;
 import org.kairosdb.core.datastore.QueryPluginFactory;
 import org.kairosdb.core.datastore.QueryQueuingManager;
+import org.kairosdb.core.datastore.SearchResultFactory;
 import org.kairosdb.core.groupby.BinGroupBy;
 import org.kairosdb.core.groupby.GroupByFactory;
 import org.kairosdb.core.groupby.TagGroupBy;
@@ -155,6 +158,9 @@ public class CoreModule extends AbstractModule
 			}
 		});
 
+		bind(CachingSearchResultFactory.class).in(Singleton.class);
+		bind(SearchResultFactory.class).annotatedWith(Names.named("BaseImplementation")).to(CachingSearchResultFactory.class).in(Singleton.class);
+		bind(SearchResultFactory.class).to(QueryLevelCachingSearchResultFactory.class);
 		bind(QueryQueuingManager.class).in(Singleton.class);
 		bind(KairosDatastore.class).in(Singleton.class);
 

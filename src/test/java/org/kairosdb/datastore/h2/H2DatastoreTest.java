@@ -22,6 +22,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.kairosdb.core.KairosDataPointFactory;
 import org.kairosdb.core.TestDataPointFactory;
+import org.kairosdb.core.datastore.CachingSearchResultFactory;
 import org.kairosdb.core.datastore.DataPointGroup;
 import org.kairosdb.core.datastore.DatastoreQuery;
 import org.kairosdb.core.datastore.KairosDatastore;
@@ -78,9 +79,10 @@ public class H2DatastoreTest extends DatastoreTestHelper
 		KairosDataPointFactory dataPointFactory = new TestDataPointFactory();
 		h2Datastore = new H2Datastore(DB_PATH, dataPointFactory, s_eventBus);
 
+		CachingSearchResultFactory searchResultFactory = new CachingSearchResultFactory(dataPointFactory, h2Datastore, false);
 		s_datastore = new KairosDatastore(h2Datastore,
 				new QueryQueuingManager(1, "hostname"),
-				dataPointFactory, false);
+				dataPointFactory, searchResultFactory);
 
 		s_eventBus.register(h2Datastore);
 
