@@ -109,14 +109,25 @@ public class FilterAggregator implements Aggregator {
             }
         }
 
+        private boolean areTypesComparable(DataPoint dp, Class thresholdClass) {
+            return (String.class.isAssignableFrom(thresholdClass) && StringDataPoint.API_TYPE.equals(dp.getApiDataType())) ||
+                    (Number.class.isAssignableFrom(thresholdClass) && !StringDataPoint.API_TYPE.equals(dp.getApiDataType()));
+        }
+
         public boolean hasNext() {
             boolean foundValidDp = false;
             while (!foundValidDp && currentDataPoint != null) {
                 boolean filterOutValue = false;
-                if (Double.class.isAssignableFrom(m_threshold.getClass())) {
-                    filterOutValue = filterOut(m_filterop, currentDataPoint.getDoubleValue(), (Double) m_threshold);
-                } else if (StringDataPoint.API_TYPE.equals(currentDataPoint.getApiDataType())) {
-                    filterOutValue = filterOut(m_filterop, ((StringDataPoint) currentDataPoint).getValue(), m_threshold.toString());
+                if (areTypesComparable(currentDataPoint, m_threshold.getClass())) {
+                    if (Number.class.isAssignableFrom(m_threshold.getClass())) {
+                        filterOutValue = filterOut(m_filterop, currentDataPoint.getDoubleValue(), ((Number) m_threshold).doubleValue());
+                    } else if (StringDataPoint.API_TYPE.equals(currentDataPoint.getApiDataType())) {
+                        filterOutValue = filterOut(m_filterop, ((StringDataPoint) currentDataPoint).getValue(), m_threshold.toString());
+                    }
+                } else {
+                    // when types are different, we filter consider the datapoint to be non-equal to the threshold, so we just check if the operation is non-equal
+                    // for all other operations the datapoint will NOT be filtered out
+                    filterOutValue = FilterOperation.NE.equals(m_filterop);
                 }
                 if (filterOutValue) {
                     moveCurrentDataPoint();
