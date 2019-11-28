@@ -125,9 +125,8 @@ public class FilterAggregator implements Aggregator {
                         filterOutValue = filterOut(m_filterop, ((StringDataPoint) currentDataPoint).getValue(), m_threshold.toString());
                     }
                 } else {
-                    // when types are different, we filter consider the datapoint to be non-equal to the threshold, so we just check if the operation is non-equal
-                    // for all other operations the datapoint will NOT be filtered out
-                    filterOutValue = FilterOperation.NE.equals(m_filterop);
+                    // when types are different, we will filter out the data
+                    filterOutValue = true;
                 }
                 if (filterOutValue) {
                     moveCurrentDataPoint();
