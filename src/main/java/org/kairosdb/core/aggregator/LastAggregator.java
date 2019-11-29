@@ -78,7 +78,7 @@ public class LastAggregator extends RangeAggregator {
 				}
 
                 try {
-                    return Collections.singletonList(m_dataPointFactory.getFactoryForType(lastDp.getApiDataType()).getDataPoint(retTime, toDataInput(lastDp)));
+                    return Collections.singletonList(m_dataPointFactory.getFactoryForDataStoreType(lastDp.getDataStoreDataType()).getDataPoint(retTime, toDataInput(lastDp)));
                 } catch (IOException ioe) {
                     throw new RuntimeException(ioe);
                 }

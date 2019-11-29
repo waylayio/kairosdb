@@ -70,7 +70,7 @@ public class FirstAggregator extends RangeAggregator {
             if (dataPointRange.hasNext()) {
                 DataPoint dataPoint = dataPointRange.next();
                 try {
-                    ret = Collections.singletonList(m_dataPointFactory.getFactoryForType(dataPoint.getApiDataType()).getDataPoint(returnTime, toDataInput(dataPoint)));
+                    ret = Collections.singletonList(m_dataPointFactory.getFactoryForDataStoreType(dataPoint.getDataStoreDataType()).getDataPoint(returnTime, toDataInput(dataPoint)));
                 } catch (IOException ioe) {
                     throw new RuntimeException(ioe);
                 }

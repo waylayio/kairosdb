@@ -20,6 +20,8 @@ import com.google.common.collect.ImmutableList;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
+import org.kairosdb.core.KairosDataPointFactory;
+import org.kairosdb.core.TestDataPointFactory;
 import org.kairosdb.core.annotation.Feature;
 import org.kairosdb.core.annotation.FeatureComponent;
 import org.kairosdb.core.datapoints.DoubleDataPointFactory;
@@ -63,6 +65,7 @@ public class TestAggregatorFactory implements FeatureProcessingFactory<Aggregato
 			@Override
 			protected void configure()
 			{
+				bind(KairosDataPointFactory.class).to(TestDataPointFactory.class);
 				bind(DoubleDataPointFactory.class).to(DoubleDataPointFactoryImpl.class);
 				bind(FilterEventBus.class).toInstance(new FilterEventBus(new EventBusConfiguration(new Properties())));
 
