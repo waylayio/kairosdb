@@ -17,74 +17,74 @@ package org.kairosdb.core.aggregator;
 
 import com.google.inject.Inject;
 import org.kairosdb.core.DataPoint;
+import org.kairosdb.core.KairosDataPointFactory;
 import org.kairosdb.core.annotation.FeatureComponent;
-import org.kairosdb.core.datapoints.DoubleDataPointFactory;
+import org.kairosdb.util.KDataInput;
+import org.kairosdb.util.KDataOutput;
 
+import java.io.DataInput;
+import java.io.IOException;
 import java.util.Collections;
 import java.util.Iterator;
 
 /**
- Converts all longs to double. This will cause a loss of precision for very large long values.
+ * Converts all longs to double. This will cause a loss of precision for very large long values.
  */
 @FeatureComponent(
         name = "last",
-		description = "Returns the last value data point for the time range."
+        description = "Returns the last value data point for the time range."
 )
-public class LastAggregator extends RangeAggregator
-{
-	private DoubleDataPointFactory m_dataPointFactory;
+public class LastAggregator extends RangeAggregator {
+    private KairosDataPointFactory m_dataPointFactory;
 
-	@Inject
-	public LastAggregator(DoubleDataPointFactory dataPointFactory)
-	{
-		m_dataPointFactory = dataPointFactory;
-	}
+    @Inject
+    public LastAggregator(KairosDataPointFactory dataPointFactory) {
+        m_dataPointFactory = dataPointFactory;
+    }
 
-	@Override
-	public boolean canAggregate(String groupType)
-	{
-		return DataPoint.GROUP_NUMBER.equals(groupType);
-	}
+    @Override
+    public boolean canAggregate(String groupType) {
+        return true;
+    }
 
-	@Override
-	public String getAggregatedGroupType(String groupType)
-	{
-		return m_dataPointFactory.getGroupType();
-	}
+    @Override
+    public String getAggregatedGroupType(String groupType) {
+        return groupType;
+    }
 
-	@Override
-	protected RangeSubAggregator getSubAggregator()
-	{
-		return (new LastDataPointAggregator());
-	}
+    @Override
+    protected RangeSubAggregator getSubAggregator() {
+        return (new LastDataPointAggregator());
+    }
 
-	private class LastDataPointAggregator implements RangeSubAggregator
-	{
-		@Override
-		public Iterable<DataPoint> getNextDataPoints(long returnTime, Iterator<DataPoint> dataPointRange)
-		{
-			Double last = null;
-			Long lastTime = 0L;
-			while (dataPointRange.hasNext())
-			{
-				final DataPoint dp = dataPointRange.next();
-				if (dp.isDouble())
-				{
-					last = dp.getDoubleValue();
-					lastTime = dp.getTimestamp();
+    private DataInput toDataInput(DataPoint dataPoint) throws IOException {
+        KDataOutput output = new KDataOutput();
+        dataPoint.writeValueToBuffer(output);
+        return KDataInput.createInput(output.getBytes());
+    }
+
+    private class LastDataPointAggregator implements RangeSubAggregator {
+        @Override
+        public Iterable<DataPoint> getNextDataPoints(long returnTime, Iterator<DataPoint> dataPointRange) {
+            DataPoint lastDp = null;
+            while (dataPointRange.hasNext()) {
+                lastDp = dataPointRange.next();
+            }
+
+            if (lastDp != null) {
+                long retTime = returnTime;
+                if (!m_alignStartTime && !m_alignEndTime) {
+					retTime = lastDp.getTimestamp();
 				}
-			}
 
-			if (last != null)
-			{
-				long retTime = returnTime;
-				if (!m_alignStartTime && !m_alignEndTime)
-					retTime = lastTime;
+                try {
+                    return Collections.singletonList(m_dataPointFactory.getFactoryForDataStoreType(lastDp.getDataStoreDataType()).getDataPoint(retTime, toDataInput(lastDp)));
+                } catch (IOException ioe) {
+                    throw new RuntimeException(ioe);
+                }
+            }
 
-				return Collections.singletonList(m_dataPointFactory.createDataPoint(retTime, last));
-			}
-
-			return Collections.emptyList();
-		}
-	}
+            return Collections.emptyList();
+        }
+    }
 }
