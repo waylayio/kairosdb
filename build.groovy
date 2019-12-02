@@ -28,7 +28,7 @@ saw.setProperty(Tablesaw.PROP_MULTI_THREAD_OUTPUT, Tablesaw.PROP_VALUE_ON)
 
 programName = "kairosdb"
 //Do not use '-' in version string, it breaks rpm uninstall.
-version = "1.2.1"
+version = "1.2.1-waylay-SNAPSHOT"
 release = saw.getProperty("KAIROS_RELEASE_NUMBER", "1") //package release number
 summary = "KairosDB"
 description = """\
@@ -112,7 +112,7 @@ pomRule = ivy.createPomRule("build/jar/pom.xml", ivy.getResolveRule("default"))
 
 //------------------------------------------------------------------------------
 //==-- Publish Artifacts --==
-if (version.contains("SNAPSHOT"))
+if (version.contains("SNAPSHOT") || release.contains("SNAPSHOT"))
 	defaultResolver = "local-m2-publish-snapshot"
 else
 	defaultResolver = "local-m2-publish"
