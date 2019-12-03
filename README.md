@@ -1,3 +1,5 @@
+WaylayIO fork of
+
 ![KairosDB](webroot/img/logoSmall.png)
 [![Build Status](https://travis-ci.org/kairosdb/kairosdb.svg?branch=develop)](https://travis-ci.org/kairosdb/kairosdb)
 
@@ -19,6 +21,9 @@ Installation instructions are found [here](http://kairosdb.github.io/docs/build/
 ## Getting Involved
 
 Join the [KairosDB discussion group](https://groups.google.com/forum/#!forum/kairosdb-group).
+
+## Releasing WAYLAY branch
+When releasing the Waylay branch, do not forget to set the `KAIROS_RELEASE_NUMBER` version number to `+<patch number>`
 
 ## Contributing to KairosDB
 
