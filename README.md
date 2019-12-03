@@ -1,4 +1,4 @@
-WaylayIO fork of
+[Waylay](https://waylay.io) fork of
 
 ![KairosDB](webroot/img/logoSmall.png)
 [![Build Status](https://travis-ci.org/kairosdb/kairosdb.svg?branch=develop)](https://travis-ci.org/kairosdb/kairosdb)
