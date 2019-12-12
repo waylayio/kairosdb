@@ -35,6 +35,8 @@ To run tests using a local Cassandra installation, run
     
 Running `mvn test` without the `CASSANDRA_HOST` environment variable will skip tests that depend on Cassandra.
 
+Running `mvn deploy` will push the artifacts, including the distributable .tar.gz to Nexus.
+
 Releases can be performed as usual using the [Maven release plugin commands](https://maven.apache.org/maven-release/maven-release-plugin/usage.html)
 
 ## Contributing to KairosDB
