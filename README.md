@@ -37,7 +37,13 @@ Running `mvn test` without the `CASSANDRA_HOST` environment variable will skip t
 
 Running `mvn deploy` will push the artifacts, including the distributable .tar.gz to Nexus.
 
-Releases can be performed as usual using the [Maven release plugin commands](https://maven.apache.org/maven-release/maven-release-plugin/usage.html)
+
+Releases can be performed with the following command:
+
+    mvn clean -DskipTests -Darguments=-DskipTests -Dmaven.javadoc.skip=true  release:perform
+
+Note that the `build` directory which is created by a number of tests doesn't always get cleaned up properly by
+the tests. This means that it may be necessary to do a `rm -rf build` between builds of this repo.
 
 ## Contributing to KairosDB
 
