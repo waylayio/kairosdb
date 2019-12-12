@@ -21,7 +21,9 @@ import com.google.inject.Key;
 import com.google.inject.name.Names;
 import org.json.JSONException;
 import org.junit.AfterClass;
+import org.junit.Assume;
 import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
@@ -35,6 +37,7 @@ import org.kairosdb.core.datastore.QueryMetric;
 import org.kairosdb.core.datastore.TimeUnit;
 import org.kairosdb.core.exception.DatastoreException;
 import org.kairosdb.core.exception.KairosDBException;
+import org.kairosdb.testing.AssumingCassandraRule;
 import org.kairosdb.util.ValidationException;
 
 import java.io.File;
@@ -55,6 +58,9 @@ import static org.hamcrest.core.IsEqual.equalTo;
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class ExportTest
 {
+	@ClassRule
+	public static AssumingCassandraRule assumingCassandraRule = new AssumingCassandraRule();
+
 	public static final String METRIC_NAME = "kairos.import_export_unit_test";
 	private static Main s_main;
 	private static Injector s_injector;
@@ -89,6 +95,8 @@ public class ExportTest
 	@BeforeClass
 	public static void loadData() throws IOException, KairosDBException, InterruptedException
 	{
+		// Skip the test entirely if we don't have a cassandra host
+		Assume.assumeNotNull(System.getenv("CASSANDRA_HOST"));
 		File props = new File("kairosdb.properties");
 		if (!props.exists())
 			props = null;
