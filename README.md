@@ -22,8 +22,20 @@ Installation instructions are found [here](http://kairosdb.github.io/docs/build/
 
 Join the [KairosDB discussion group](https://groups.google.com/forum/#!forum/kairosdb-group).
 
-## Releasing WAYLAY branch
-When releasing the Waylay branch, do not forget to set the `KAIROS_RELEASE_NUMBER` version number to `+<patch number>`
+## Building and releasing WAYLAY branch
+
+The Waylay branch is built using maven.
+
+Note that the version number includes a patch number (e.g. the "+2" in 1.2.1-waylay+2). This patch number
+should be incremented on each release (and the base KairosDB version should remain unchanged).
+
+To run tests using a local Cassandra installation, run
+
+    $ CASSANDRA_HOST=localhost mvn clean test
+    
+Running `mvn test` without the `CASSANDRA_HOST` environment variable will skip tests that depend on Cassandra.
+
+Releases can be performed as usual using the [Maven release plugin commands](https://maven.apache.org/maven-release/maven-release-plugin/usage.html)
 
 ## Contributing to KairosDB
 
