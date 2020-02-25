@@ -35,10 +35,11 @@ To run tests using a local Cassandra installation, run
     
 Running `mvn test` without the `CASSANDRA_HOST` environment variable will skip tests that depend on Cassandra.
 
-Running `mvn deploy` will push the artifacts, including the distributable .tar.gz to Nexus.
+Running `mvn deploy` will push the artifacts, including the distributable .tar.gz to Nexus 
+(make sure you have specified credentials for NEXUS `maven-releases` server in settings.xml)
 
 
-Releases can be performed with the following command:
+Releases can be performed with the following command (TODO:make sure that the release pushes the artifacts to nexus):
 
     mvn clean -DskipTests -Darguments=-DskipTests -Dmaven.javadoc.skip=true  release:perform
 
