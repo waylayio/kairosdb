@@ -34,6 +34,12 @@ public class LimitAggregator implements Aggregator
 	}
 
 	@Override
+	public void init()
+	{
+
+	}
+
+	@Override
 	public DataPointGroup aggregate(DataPointGroup dataPointGroup)
 	{
 		return new LimitDataPointGroup(dataPointGroup);
@@ -77,6 +83,12 @@ public class LimitAggregator implements Aggregator
 		public String getName()
 		{
 			return (m_innerDataPointGroup.getName());
+		}
+
+		@Override
+		public String getAlias()
+		{
+			return m_innerDataPointGroup.getAlias();
 		}
 
 		@Override

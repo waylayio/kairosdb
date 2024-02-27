@@ -11,7 +11,7 @@ import org.kairosdb.core.exception.DatastoreException;
 import static com.codahale.metrics.health.HealthCheck.Result;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -31,13 +31,13 @@ public class DatastoreQueryHealthCheckTest
 		//when(datastore.getMetricNames()).thenReturn(Collections.<String>emptyList());
 		when(datastore.createQuery(any(QueryMetric.class))).thenReturn(query);
 
-		healthCheck = new DatastoreQueryHealthCheck(datastore);
+		healthCheck = new DatastoreQueryHealthCheck(datastore, "kairosdb.");
 	}
 
 	@Test(expected = NullPointerException.class)
 	public void testConstructorNullDatastoreInvalid()
 	{
-		new DatastoreQueryHealthCheck(null);
+		new DatastoreQueryHealthCheck(null, "kairosdb.");
 	}
 
 	@Test

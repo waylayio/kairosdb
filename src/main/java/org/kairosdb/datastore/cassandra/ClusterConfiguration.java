@@ -5,25 +5,24 @@ import com.datastax.driver.core.ProtocolOptions;
 import com.google.common.base.Splitter;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Multimap;
 import com.typesafe.config.ConfigException;
+import com.typesafe.config.ConfigObject;
 import com.typesafe.config.ConfigValue;
 import org.kairosdb.core.KairosConfig;
+import org.kairosdb.core.datastore.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.text.ParseException;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import static com.google.common.base.Preconditions.checkState;
+import static org.kairosdb.datastore.cassandra.RowSpec.DEFAULT_ROW_WIDTH;
 
 public class ClusterConfiguration
 {
@@ -53,6 +52,8 @@ public class ClusterConfiguration
 	private String m_replication;
 	private long m_startTime;
 	private long m_endTime;
+	private long m_rowWidth;
+	private TimeUnit m_rowUnit;
 
 	public ClusterConfiguration(KairosConfig config) throws ParseException
 	{
@@ -64,6 +65,17 @@ public class ClusterConfiguration
 		m_readConsistencyLevel = ConsistencyLevel.valueOf(config.getString("read_consistency_level", "ONE"));
 		m_writeConsistencyLevel = ConsistencyLevel.valueOf(config.getString("write_consistency_level", "QUORUM"));
 		m_compression = ProtocolOptions.Compression.valueOf(config.getString("protocol_compression", "LZ4"));
+
+		m_rowUnit = TimeUnit.valueOf(config.getString("row_time_unit", TimeUnit.MILLISECONDS.toString()));
+
+		if (!(m_rowUnit == TimeUnit.SECONDS || m_rowUnit == TimeUnit.MILLISECONDS))
+			throw new ParseException("The row_time_unit for a cluster must be either SECONDS or MILLISECONDS", -1);
+
+		long defaultWidth = DEFAULT_ROW_WIDTH;
+		if (m_rowUnit == TimeUnit.SECONDS)
+			defaultWidth = defaultWidth / 1000;
+
+		m_rowWidth = config.getLong("row_width", defaultWidth);
 
 		m_useSsl = config.getBoolean("use_ssl", false);
 		m_maxQueueSize = config.getInt("max_queue_size", 500);
@@ -126,9 +138,9 @@ public class ClusterConfiguration
 		{
 			try
 			{
-				KairosConfig indexTagConfig = config.getConfig("tag_indexed_row_key_lookup_metrics");
+				ConfigObject indexTagConfig = config.getObjectMap("tag_indexed_row_key_lookup_metrics");
 
-				for (Map.Entry<String, ConfigValue> configEntry : indexTagConfig.getRawConfig().entrySet())
+				for (Map.Entry<String, ConfigValue> configEntry : indexTagConfig.entrySet())
 				{
 					Object metricTags = configEntry.getValue().unwrapped();
 					if (metricTags instanceof List)
@@ -275,5 +287,15 @@ public class ClusterConfiguration
 	{
 		return m_tagIndexedMetrics;
 	}
+
+	public TimeUnit getRowTimeUnit()
+		{
+		return m_rowUnit;
+		}
+
+	public long getRowWidth()
+		{
+		return m_rowWidth;
+		}
 }
 

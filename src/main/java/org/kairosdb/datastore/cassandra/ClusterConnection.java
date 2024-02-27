@@ -3,12 +3,9 @@ package org.kairosdb.datastore.cassandra;
 import com.datastax.driver.core.*;
 import com.datastax.driver.core.exceptions.InvalidQueryException;
 import com.datastax.driver.core.policies.LoadBalancingPolicy;
-import com.google.common.base.Charsets;
 import com.google.common.base.Function;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMultimap;
-import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ListMultimap;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.SetMultimap;
@@ -16,10 +13,13 @@ import com.google.common.hash.Hasher;
 import com.google.common.hash.Hashing;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.MoreExecutors;
+import org.kairosdb.core.datastore.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
@@ -31,6 +31,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+
+import static org.kairosdb.datastore.cassandra.CassandraDatastore.ROW_KEY_METRIC_NAMES;
+import static org.kairosdb.datastore.cassandra.CassandraDatastore.serializeString;
+import static org.kairosdb.datastore.cassandra.RowSpec.DEFAULT_ROW_WIDTH;
+import static org.kairosdb.datastore.cassandra.RowSpec.LEGACY_UNIT;
 
 /**
  Created by bhawkins on 4/29/17.
@@ -73,6 +78,7 @@ public class ClusterConnection
 			"  PRIMARY KEY ((metric, row_time, data_type, tags), offset)" +
 			")";*/
 
+	//old row key index
 	public static final String ROW_KEY_INDEX_TABLE_NAME = "row_key_index";
 	public static final String ROW_KEY_INDEX_TABLE = "" +
 			"CREATE TABLE IF NOT EXISTS "+ROW_KEY_INDEX_TABLE_NAME+" (\n" +
@@ -144,6 +150,15 @@ public class ClusterConnection
 			" PRIMARY KEY ((service, service_key), key)" +
 			")";
 
+	public static final String SPEC_TABLE_NAME = "spec";
+	public static final String SPEC_TABLE = "" +
+			"CREATE TABLE IF NOT EXISTS "+SPEC_TABLE_NAME+" (" +
+			" spec_type text," +
+			" name text," +
+			" value text," +
+			" PRIMARY KEY ((spec_type), name)" +
+			")";
+
 
 
 	//All inserts and deletes add millisecond timestamp consistency with old code and TWCS instead of nanos
@@ -206,10 +221,10 @@ public class ClusterConnection
 			"FROM row_key_time_index WHERE metric = ? AND table_name = ? AND " +
 			"row_time >= ? AND row_time <= ?";
 
-	public static final String ROW_KEY_QUERY = "SELECT row_time, data_type, tags " +
+	public static final String ROW_KEY_QUERY = "SELECT row_time, data_type, tags, TTL (value) " +
 			"FROM row_keys WHERE metric = ? AND table_name = ? AND row_time = ?";
 
-	public static final String TAG_INDEXED_ROW_KEY_QUERY = "SELECT row_time, data_type, tags, tag_collection_hash " +
+	public static final String TAG_INDEXED_ROW_KEY_QUERY = "SELECT row_time, data_type, tags, TTL (value), tag_collection_hash " +
 			"FROM tag_indexed_row_keys WHERE metric = ? AND table_name = ? AND row_time = ? and single_tag_pair = ? " +
 			"ORDER BY data_type, tag_collection_hash";
 
@@ -305,6 +320,8 @@ public class ClusterConnection
 
 	private final CassandraConfiguration m_cassandraConfiguration;
 
+	private RowSpec m_rowSpec;
+
 
 	public ClusterConnection(CassandraConfiguration cassandraConfig, CassandraClient cassandraClient, EnumSet<Type> clusterType,
 			Multimap<String, String> tagIndexMetricNames)
@@ -313,7 +330,7 @@ public class ClusterConnection
 		m_cassandraClient = cassandraClient;
 		m_clusterType = clusterType;
 
-		m_alwaysUseTagIndexedLookup = tagIndexMetricNames.equals(ImmutableMultimap.of("*", "*"));
+		m_alwaysUseTagIndexedLookup = tagIndexMetricNames.containsKey("*");
 		m_tagIndexMetricNames = tagIndexMetricNames;
 
 		if (m_alwaysUseTagIndexedLookup)
@@ -390,6 +407,9 @@ public class ClusterConnection
 			psDataPointsInsert = m_session.prepare(DATA_POINTS_INSERT);
 			psDataPointsDelete = m_session.prepare(DATA_POINTS_DELETE);
 			psDataPointsDeleteRow = m_session.prepare(DATA_POINTS_DELETE_ROW);
+			psRowKeyDelete = m_session.prepare(ROW_KEY_DELETE);
+			psTagIndexedRowKeyDelete = m_session.prepare(TAG_INDEXED_ROW_KEY_DELETE);
+			psRowKeyTimeDelete = m_session.prepare(ROW_KEY_TIME_DELETE);
 			try
 			{
 				psDataPointsDeleteRange = m_session.prepare(DATA_POINTS_DELETE_RANGE);
@@ -433,9 +453,6 @@ public class ClusterConnection
 		{
 			psRowKeyInsert = m_session.prepare(ROW_KEY_INSERT);
 			psTagIndexedRowKeyInsert = m_session.prepare(TAG_INDEXED_ROW_KEY_INSERT);
-			psRowKeyDelete = m_session.prepare(ROW_KEY_DELETE);
-			psTagIndexedRowKeyDelete = m_session.prepare(TAG_INDEXED_ROW_KEY_DELETE);
-			psRowKeyTimeDelete = m_session.prepare(ROW_KEY_TIME_DELETE);
 			psRowKeyTimeInsert = m_session.prepare(ROW_KEY_TIME_INSERT);
 		}
 
@@ -458,7 +475,70 @@ public class ClusterConnection
 			psServiceIndexGetEntries = m_session.prepare(SERVICE_INDEX_GET_ENTRIES);
 			psServiceIndexInsertModifiedTime = m_session.prepare(SERVICE_INDEX_INSERT_MODIFIED_TIME);
 		}
+
+		readRowSpec();
 	}
+
+	private void readRowSpec()
+		{
+		ClusterConfiguration clusterConfiguration = m_cassandraClient.getClusterConfiguration();
+
+		TimeUnit rowTimeUnit = TimeUnit.MILLISECONDS;
+		long rowWidth = DEFAULT_ROW_WIDTH;
+		boolean isLegacy = false;
+
+		//We only look at configuration for write clusters.  Decreases the chances of
+		//messing up an existing read cluster.
+		if (m_clusterType.contains(Type.WRITE))
+		{
+			rowTimeUnit = clusterConfiguration.getRowTimeUnit();
+			rowWidth = clusterConfiguration.getRowWidth();
+		}
+
+		ResultSet resultSet = m_session.execute("SELECT value FROM " + SPEC_TABLE_NAME + " WHERE spec_type = 'cluster_config' AND name = 'row_time_unit'");
+		Row rowTimeUnitResult = resultSet.one();
+		if (rowTimeUnitResult != null)
+		{
+			String unit = rowTimeUnitResult.getString(0);
+			if (!LEGACY_UNIT.equals(unit))
+			{
+				rowTimeUnit = TimeUnit.valueOf(unit);
+			}
+			else
+			{
+				isLegacy = true;
+				rowTimeUnit = TimeUnit.MILLISECONDS;
+			}
+		}
+		else if (m_clusterType.contains(Type.WRITE))
+		{
+			String unit = rowTimeUnit.toString();
+
+			//Check if we have any data
+			ResultSet names = m_session.execute("SELECT column1 FROM string_index " +
+					"WHERE key = ? LIMIT 1", serializeString(ROW_KEY_METRIC_NAMES));
+
+			if (names.one() != null)
+			{
+				unit = LEGACY_UNIT;
+				isLegacy = true;
+			}
+
+			m_session.execute("INSERT INTO " + SPEC_TABLE_NAME + " (spec_type, name, value) VALUES ('cluster_config', 'row_time_unit', '" + unit + "')");
+		}
+
+		resultSet = m_session.execute("SELECT value FROM " + SPEC_TABLE_NAME + " WHERE spec_type = 'cluster_config' AND name = 'row_width'");
+		Row rowWidthResult = resultSet.one();
+		if (rowWidthResult != null)
+			rowWidth = Long.parseLong(rowWidthResult.getString(0));
+		else if (m_clusterType.contains(Type.WRITE))
+			m_session.execute("INSERT INTO "+SPEC_TABLE_NAME+" (spec_type, name, value) VALUES ('cluster_config', 'row_width', '"+rowWidth+"')");
+
+		logger.info("RowSpec for {}, Legacy: {}, Unit: {}, Width: {}", m_cassandraClient.getClusterConfiguration().getClusterName(),
+				isLegacy, rowTimeUnit, rowWidth);
+
+		m_rowSpec = new RowSpec(rowWidth, rowTimeUnit, isLegacy);
+		}
 
 	public void close()
 	{
@@ -476,6 +556,11 @@ public class ClusterConnection
 	{
 		return m_cassandraClient.getWriteLoadBalancingPolicy();
 	}
+
+	public RowSpec getRowSpec()
+		{
+		return m_rowSpec;
+		}
 
 	public String getClusterName()
 	{
@@ -528,6 +613,8 @@ public class ClusterConnection
 					session.execute(ROW_KEYS+" "+m_cassandraConfiguration.getCreateWithConfig(ROW_KEYS_NAME));
 					session.execute(TAG_INDEXED_ROW_KEYS+" "+m_cassandraConfiguration.getCreateWithConfig(TAG_INDEXED_ROW_KEYS_NAME));
 					session.execute(ROW_KEY_TIME_INDEX+" "+m_cassandraConfiguration.getCreateWithConfig(ROW_KEY_TIME_INDEX_NAME));
+
+					session.execute(SPEC_TABLE+" "+m_cassandraConfiguration.getCreateWithConfig(SPEC_TABLE_NAME));
 				}
 				catch (Exception e)
 				{
@@ -606,7 +693,8 @@ public class ClusterConnection
 							.setString(1, DATA_POINTS_TABLE_NAME)
 							.setTimestamp(2, new Date(rowKey.getTimestamp()))
 							.setString(3, rowKey.getDataType())
-							.setMap(4, rowKey.getTags());
+							.setMap(4, rowKey.getTags())
+							.setIdempotent(true);
 		}
 
 		/*
@@ -798,7 +886,7 @@ public class ClusterConnection
 								return resultSetsGroupedByTagName.stream().map(RowCountEstimatingRowKeyResultSet::create).min(comparator)
 										.orElseThrow(() -> new IllegalStateException("No minimal ResultSet found"));
 							}
-						});
+						}, MoreExecutors.directExecutor());
 
 				return keyTimeQueryResultSetFuture;
 			}
@@ -848,8 +936,8 @@ public class ClusterConnection
 				if (m_alwaysUseTagIndexedLookup || allTags || indexedTags.contains(tagPairEntry.getKey()))
 				{
 					tagPairHashes.add(hashForTagPair(tagPairEntry.getKey(), tagPairEntry.getValue()));
-					tagCollectionHasher.putString(tagPairEntry.getKey(), Charsets.UTF_8);
-					tagCollectionHasher.putString(tagPairEntry.getValue(), Charsets.UTF_8);
+					tagCollectionHasher.putString(tagPairEntry.getKey(), StandardCharsets.UTF_8);
+					tagCollectionHasher.putString(tagPairEntry.getValue(), StandardCharsets.UTF_8);
 				}
 			}
 			return new TagSetHash(tagCollectionHasher.hash().asInt(), tagPairHashes);

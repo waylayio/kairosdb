@@ -74,6 +74,12 @@ public class DivideAggregator implements Aggregator
 	}
 
 	@Override
+	public void init()
+	{
+
+	}
+
+	@Override
 	public DataPointGroup aggregate(DataPointGroup dataPointGroup)
 	{
 		checkState(m_divisor != 0.0);
@@ -120,6 +126,12 @@ public class DivideAggregator implements Aggregator
 		public String getName()
 		{
 			return (m_innerDataPointGroup.getName());
+		}
+
+		@Override
+		public String getAlias()
+		{
+			return m_innerDataPointGroup.getAlias();
 		}
 
 		@Override

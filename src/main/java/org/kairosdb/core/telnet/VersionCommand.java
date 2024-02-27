@@ -19,34 +19,30 @@ package org.kairosdb.core.telnet;
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
 import org.jboss.netty.channel.Channel;
-import org.kairosdb.core.DataPointSet;
 import org.kairosdb.core.datapoints.LongDataPointFactory;
 import org.kairosdb.core.exception.DatastoreException;
-import org.kairosdb.core.reporting.KairosMetricReporter;
+import org.kairosdb.metrics4j.MetricSourceManager;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static org.kairosdb.util.Preconditions.checkNotNullOrEmpty;
+import static org.kairosdb.util.Preconditions.requireNonNullOrEmpty;
 
-public class VersionCommand implements TelnetCommand, KairosMetricReporter
+public class VersionCommand implements TelnetCommand
 {
+	private static final TelnetStats stats = MetricSourceManager.getSource(TelnetStats.class);
+
 	private AtomicInteger m_counter = new AtomicInteger();
-	private final LongDataPointFactory m_dataPointFactory;
-	private String m_hostName;
 
 	@Inject
-	public VersionCommand(@Named("HOSTNAME") String hostname, LongDataPointFactory factory)
+	public VersionCommand()
 	{
-		checkNotNullOrEmpty(hostname);
-		m_hostName = hostname;
-		m_dataPointFactory = factory;
 	}
 
 	@Override
 	public void execute(Channel chan, List<String> command) throws DatastoreException
 	{
+		stats.request(getCommand()).put(1);
 		m_counter.incrementAndGet();
 		if (chan.isConnected())
 		{
@@ -62,14 +58,4 @@ public class VersionCommand implements TelnetCommand, KairosMetricReporter
 		return ("version");
 	}
 
-	@Override
-	public List<DataPointSet> getMetrics(long now)
-	{
-		DataPointSet dps = new DataPointSet(REPORTING_METRIC_NAME);
-		dps.addTag("host", m_hostName);
-		dps.addTag("method", "version");
-		dps.addDataPoint(m_dataPointFactory.createDataPoint(now, m_counter.getAndSet(0)));
-
-		return (Collections.singletonList(dps));
-	}
 }

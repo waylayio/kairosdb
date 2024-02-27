@@ -7,7 +7,11 @@ import com.datastax.driver.core.Host;
 import com.datastax.driver.core.Statement;
 import com.datastax.driver.core.policies.LoadBalancingPolicy;
 import org.kairosdb.core.DataPoint;
+import org.kairosdb.metrics4j.MetricSourceManager;
+import org.kairosdb.core.annotation.InjectProperty;
 import org.kairosdb.util.KDataOutput;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.inject.Inject;
 import javax.inject.Named;
@@ -30,13 +34,20 @@ import static org.kairosdb.datastore.cassandra.ClusterConnection.DATA_POINTS_TAB
  */
 public class CQLBatch
 {
+	private static final BatchMetrics metrics = MetricSourceManager.getSource(BatchMetrics.class);
+	public static final Logger logger = LoggerFactory.getLogger(CQLBatch.class);
 	private static final Charset UTF_8 = Charset.forName("UTF-8");
+	public static final String METRIC_INDEX_FILTER_PREFIX = "kairosdb.metric_index_filter.prefix";
 
 	private final ClusterConnection m_clusterConnection;
-	private final BatchStats m_batchStats;
+	//private final BatchStats m_batchStats;
 	private final ConsistencyLevel m_consistencyLevel;
 	private final long m_now;
 	private final LoadBalancingPolicy m_loadBalancingPolicy;
+
+	private long m_rowKeysCount = 0;
+	private long m_rowKeyTimeIndexCount = 0;
+	private long m_tagIndexedRowKeysCount = 0;
 
 	private Map<Host, BatchStatement> m_batchMap = new HashMap<>();
 
@@ -45,20 +56,20 @@ public class CQLBatch
 	private BatchStatement m_rowKeyBatch = new BatchStatement(BatchStatement.Type.UNLOGGED);
 
 	private List<DataPointsRowKey> m_newRowKeys = new ArrayList<>();
-	private List<String> m_newMetrics = new ArrayList<>();
+	private List<TimedString> m_newMetrics = new ArrayList<>();
 
+	private List<String> m_prefixFilterList = new ArrayList<>();
 
 
 	@Inject
 	public CQLBatch(
 			ConsistencyLevel consistencyLevel,
 			@Named("write_cluster")ClusterConnection clusterConnection,
-			BatchStats batchStats,
 			LoadBalancingPolicy loadBalancingPolicy)
 	{
 		m_consistencyLevel = consistencyLevel;
 		m_clusterConnection = clusterConnection;
-		m_batchStats = batchStats;
+		//m_batchStats = batchStats;
 		m_now = System.currentTimeMillis();
 		m_loadBalancingPolicy = loadBalancingPolicy;
 
@@ -67,26 +78,39 @@ public class CQLBatch
 		m_rowKeyBatch.setConsistencyLevel(consistencyLevel);
 	}
 
-	public void addRowKey(String metricName, DataPointsRowKey rowKey, int rowKeyTtl)
+	@InjectProperty(prop = METRIC_INDEX_FILTER_PREFIX, optional = true)
+	public void setFilterPrefixList(List<String> list)
 	{
-		m_newRowKeys.add(rowKey);
-		ByteBuffer bb = ByteBuffer.allocate(8);
-		bb.putLong(0, rowKey.getTimestamp());
+		m_prefixFilterList = list;
+	}
 
+	public void addTimeIndex(String metricName, long rowKeyTime, int rowKeyTtl)
+	{
 		Statement bs = m_clusterConnection.psRowKeyTimeInsert.bind()
 				.setString(0, metricName)
 				.setString(1, DATA_POINTS_TABLE_NAME)
-				.setTimestamp(2, new Date(rowKey.getTimestamp()))
-				//.setBytesUnsafe(1, bb) //Setting timestamp in a more optimal way
+				.setTimestamp(2, new Date(rowKeyTime))
 				.setInt(3, rowKeyTtl)
 				.setIdempotent(true);
 
 		bs.setConsistencyLevel(m_consistencyLevel);
 
 		m_rowKeyBatch.add(bs);
+		m_rowKeyTimeIndexCount++;
+	}
 
+	public void addRowKey(DataPointsRowKey rowKey, int rowKeyTtl)
+	{
+		m_newRowKeys.add(rowKey);
+
+		m_rowKeysCount++;
 		RowKeyLookup rowKeyLookup = m_clusterConnection.getRowKeyLookupForMetric(rowKey.getMetricName());
-		for (Statement rowKeyInsertStmt : rowKeyLookup.createInsertStatements(rowKey, rowKeyTtl))
+		List<Statement> insertStatements = rowKeyLookup.createInsertStatements(rowKey, rowKeyTtl);
+		//if this is greater than 1 we are indexing on a tag
+		if (insertStatements.size() > 1)
+			m_tagIndexedRowKeysCount += (insertStatements.size() - 1)
+					;
+		for (Statement rowKeyInsertStmt : insertStatements)
 		{
 			rowKeyInsertStmt.setConsistencyLevel(m_consistencyLevel);
 			m_rowKeyBatch.add(rowKeyInsertStmt);
@@ -98,19 +122,35 @@ public class CQLBatch
 		RowKeyLookup rowKeyLookup = m_clusterConnection.getRowKeyLookupForMetric(rowKey.getMetricName());
 		for (Statement rowKeyInsertStmt : rowKeyLookup.createIndexStatements(rowKey, rowKeyTtl))
 		{
+			m_tagIndexedRowKeysCount++;
 			rowKeyInsertStmt.setConsistencyLevel(m_consistencyLevel);
 			m_rowKeyBatch.add(rowKeyInsertStmt);
 		}
 	}
 
-	public void addMetricName(String metricName)
+	public void addMetricName(TimedString metricNameTime)
 	{
-		m_newMetrics.add(metricName);
-		BoundStatement bs = new BoundStatement(m_clusterConnection.psStringIndexInsert);
-		bs.setBytesUnsafe(0, ByteBuffer.wrap(ROW_KEY_METRIC_NAMES.getBytes(UTF_8)));
-		bs.setString(1, metricName);
-		bs.setConsistencyLevel(m_consistencyLevel);
-		m_metricNamesBatch.add(bs);
+		String metricName = metricNameTime.getString();
+		boolean skip = false;
+
+		for (String prefix : m_prefixFilterList)
+		{
+			if (metricName.startsWith(prefix)) {
+				skip = true;
+				break;
+			}
+		}
+
+		if (!skip)
+		{
+			m_newMetrics.add(metricNameTime);
+			BoundStatement bs = new BoundStatement(m_clusterConnection.psStringIndexInsert);
+			bs.setBytesUnsafe(0, ByteBuffer.wrap(ROW_KEY_METRIC_NAMES.getBytes(UTF_8)));
+			bs.setString(1, metricName);
+			bs.setConsistencyLevel(m_consistencyLevel);
+			bs.setIdempotent(true);
+			m_metricNamesBatch.add(bs);
+		}
 	}
 
 	private void addBoundStatement(BoundStatement boundStatement)
@@ -150,7 +190,8 @@ public class CQLBatch
 		addBoundStatement(boundStatement);
 	}
 
-	public void addDataPoint(DataPointsRowKey rowKey, int columnTime, DataPoint dataPoint, int ttl) throws IOException
+	public void addDataPoint(DataPointsRowKey rowKey, int columnTime,
+			DataPoint dataPoint, int ttl) throws IOException
 	{
 		KDataOutput kDataOutput = new KDataOutput();
 		dataPoint.writeValueToBuffer(kDataOutput);
@@ -175,14 +216,15 @@ public class CQLBatch
 		if (m_metricNamesBatch.size() != 0)
 		{
 			m_clusterConnection.executeAsync(m_metricNamesBatch);
-			m_batchStats.addNameBatch(m_metricNamesBatch.size());
+			metrics.writeBatchSize("string_index").put(m_metricNamesBatch.size());
 		}
 
 		if (m_rowKeyBatch.size() != 0)
 		{
-			//m_rowKeyBatch.enableTracing();
 			m_clusterConnection.executeAsync(m_rowKeyBatch);
-			m_batchStats.addRowKeyBatch(m_rowKeyBatch.size());
+			metrics.writeBatchSize("row_keys").put(m_rowKeyBatch.size());
+			metrics.writeBatchSize("row_key_time_index").put(m_rowKeyTimeIndexCount);
+			metrics.writeBatchSize("tag_indexed_row_keys").put(m_tagIndexedRowKeysCount);
 		}
 
 		for (BatchStatement batchStatement : m_batchMap.values())
@@ -192,7 +234,7 @@ public class CQLBatch
 			{
 				m_clusterConnection.execute(batchStatement);
 				//System.out.println(resultSet.getExecutionInfo().getQueryTrace().getTraceId());
-				m_batchStats.addDatapointsBatch(batchStatement.size());
+				metrics.writeBatchSize("data_points").put(batchStatement.size());
 			}
 		}
 
@@ -200,7 +242,7 @@ public class CQLBatch
 		if (m_dataPointBatch.size() != 0)
 		{
 			m_clusterConnection.execute(m_dataPointBatch);
-			m_batchStats.addDatapointsBatch(m_dataPointBatch.size());
+			metrics.writeBatchSize("data_points").put(m_dataPointBatch.size());
 		}
 	}
 
@@ -209,7 +251,7 @@ public class CQLBatch
 		return m_newRowKeys;
 	}
 
-	public List<String> getNewMetrics()
+	public List<TimedString> getNewMetrics()
 	{
 		return m_newMetrics;
 	}

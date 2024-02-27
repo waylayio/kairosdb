@@ -87,7 +87,6 @@ public class CassandraModule extends AbstractModule
 		bind(CassandraConfiguration.class).in(Scopes.SINGLETON);
 		//bind(CassandraClient.class).to(CassandraClientImpl.class);
 		//bind(CassandraClientImpl.class).in(Scopes.SINGLETON);
-		bind(BatchStats.class).in(Scopes.SINGLETON);
 
 		bind(new TypeLiteral<Map<String, String>>(){}).annotatedWith(Names.named(CASSANDRA_AUTH_MAP))
 				.toInstance(m_authMap);
@@ -260,7 +259,7 @@ public class CassandraModule extends AbstractModule
 
 	@Provides
 	@Singleton
-	DataCache<String> getMetricNameCache(CassandraConfiguration configuration)
+	DataCache<TimedString> getMetricNameCache(CassandraConfiguration configuration)
 	{
 		return new DataCache<>(configuration.getStringCacheSize());
 	}
@@ -268,13 +267,13 @@ public class CassandraModule extends AbstractModule
 	public interface BatchHandlerFactory
 	{
 		BatchHandler create(List<DataPointEvent> events, EventCompletionCallBack callBack,
-				boolean fullBatch);
+				boolean fullBatch, RowSpec rowSpec);
 	}
 
 	public interface DeleteBatchHandlerFactory
 	{
 		DeleteBatchHandler create(String metricName, SortedMap<String, String> tags,
-				List<DataPoint> dataPoints, EventCompletionCallBack callBack);
+				List<DataPoint> dataPoints, EventCompletionCallBack callBack, RowSpec rowSpec);
 	}
 
 	public interface CQLBatchFactory

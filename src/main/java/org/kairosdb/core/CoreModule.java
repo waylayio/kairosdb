@@ -28,6 +28,7 @@ import com.google.inject.spi.InjectionListener;
 import com.google.inject.spi.TypeEncounter;
 import com.google.inject.spi.TypeListener;
 import com.typesafe.config.Config;
+import com.typesafe.config.ConfigException;
 import com.typesafe.config.ConfigValue;
 import com.typesafe.config.ConfigValueType;
 import org.kairosdb.core.aggregator.*;
@@ -50,19 +51,22 @@ import org.kairosdb.core.scheduler.KairosDBScheduler;
 import org.kairosdb.core.scheduler.KairosDBSchedulerImpl;
 import org.kairosdb.eventbus.EventBusConfiguration;
 import org.kairosdb.eventbus.FilterEventBus;
+import org.kairosdb.metrics.InternalSinkSetup;
 import org.kairosdb.plugin.Aggregator;
 import org.kairosdb.plugin.GroupBy;
 import org.kairosdb.sample.SampleQueryPlugin;
 import org.kairosdb.util.IngestExecutorService;
 import org.kairosdb.util.MemoryMonitor;
-import org.kairosdb.util.SimpleStatsReporter;
 import org.kairosdb.util.Util;
+import org.kairosdb.bigqueue.BigArrayImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import se.ugli.bigqueue.BigArray;
+import org.kairosdb.bigqueue.IBigArray;
 
 import javax.inject.Named;
 import javax.inject.Singleton;
+import java.io.IOException;
+import java.util.List;
 import java.util.MissingResourceException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -75,6 +79,8 @@ import static org.kairosdb.core.queue.QueueProcessor.QUEUE_PROCESSOR_CLASS;
 public class CoreModule extends AbstractModule
 {
 	public static final Logger logger = LoggerFactory.getLogger(CoreModule.class);
+
+	public static final String HOSTNAME_CONFIG = "kairosdb.hostname";
 
 	public static final String QUEUE_PATH = "kairosdb.queue_processor.queue_path";
 	public static final String PAGE_SIZE = "kairosdb.queue_processor.page_size";
@@ -122,11 +128,27 @@ public class CoreModule extends AbstractModule
 
 			try
 			{
-				logger.debug(String.format("%s = %s", propertyName, value.unwrapped().toString()));
+				logger.debug(String.format("%s (%s) = %s", propertyName, configValueType.name(), value.unwrapped().toString()));
 
 				//type binding didn't work well for numbers, guice will not convert double to int
 				//So we bind everything as a string and let guice convert - which it does well
-				binder.bindConstant().annotatedWith(Names.named(propertyName)).to(value.unwrapped().toString());
+				if (configValueType == ConfigValueType.LIST)
+				{
+					try
+					{
+						List<String> stringList = config.getStringList(propertyName);
+						binder.bind(new TypeLiteral<List<String>>() {})
+								.annotatedWith(Names.named(propertyName)).toInstance(stringList);
+					}
+					catch (ConfigException ce)
+					{
+						logger.debug("Property {} is not a list of string", propertyName);
+					}
+				}
+				else
+					binder.bindConstant().annotatedWith(Names.named(propertyName)).to(value.unwrapped().toString());
+
+				binder.bind(ConfigValue.class).annotatedWith(Names.named(propertyName)).toInstance(value);
 			}
 			catch (Exception e)
 			{
@@ -186,7 +208,9 @@ public class CoreModule extends AbstractModule
 		bind(KairosDBSchedulerImpl.class).in(Singleton.class);
 		bind(MemoryMonitor.class).in(Singleton.class);
 		bind(DataPointEventSerializer.class).in(Singleton.class);
-		bind(SimpleStatsReporter.class);
+
+		//Setup sink for internal Metrics4j reporting
+		bind(InternalSinkSetup.class).asEagerSingleton();
 
 		bind(SumAggregator.class);
 		bind(MinAggregator.class);
@@ -215,7 +239,7 @@ public class CoreModule extends AbstractModule
 		bind(TagGroupBy.class);
 		bind(BinGroupBy.class);
 
-		String hostname = m_config.getProperty("kairosdb.hostname");
+		String hostname = m_config.getProperty(HOSTNAME_CONFIG);
 		bindConstant().annotatedWith(Names.named("HOSTNAME")).to(hostname != null ? hostname: Util.getHostName());
 
 		//bind queue processor impl
@@ -258,10 +282,10 @@ public class CoreModule extends AbstractModule
 
 	@Provides
 	@Singleton
-	public BigArray getBigArray(@Named(QUEUE_PATH) String queuePath,
-			@Named(PAGE_SIZE) int pageSize)
+	public IBigArray getBigArray(@Named(QUEUE_PATH) String queuePath,
+			@Named(PAGE_SIZE) int pageSize) throws IOException
 	{
-		return new BigArray(queuePath, "kairos_queue", pageSize);
+		return new BigArrayImpl(queuePath, "kairos_queue", pageSize);
 	}
 
 	@Provides @Named(QUEUE_PROCESSOR) @Singleton

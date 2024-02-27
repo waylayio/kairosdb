@@ -86,6 +86,12 @@ public class ScoreAggregator implements Aggregator
         return dataPointFactory.getGroupType();
     }
 
+    @Override
+    public void init()
+    {
+
+    }
+
     public DataPointGroup aggregate(DataPointGroup dataPointGroup)
     {
         Objects.requireNonNull(dataPointGroup);
@@ -140,6 +146,12 @@ public class ScoreAggregator implements Aggregator
         public String getName()
         {
             return (innerDataPointGroup.getName());
+        }
+
+        @Override
+        public String getAlias()
+        {
+            return innerDataPointGroup.getAlias();
         }
 
         @Override

@@ -105,6 +105,12 @@ public class SaveAsAggregator implements Aggregator, GroupByAware
 	}
 
 	@Override
+	public void init()
+	{
+
+	}
+
+	@Override
 	public void setGroupBys(List<GroupBy> groupBys)
 	{
 		for (GroupBy groupBy : groupBys)
@@ -173,6 +179,12 @@ public class SaveAsAggregator implements Aggregator, GroupByAware
 		public String getName()
 		{
 			return m_innerDataPointGroup.getName();
+		}
+
+		@Override
+		public String getAlias()
+		{
+			return m_innerDataPointGroup.getAlias();
 		}
 
 		@Override

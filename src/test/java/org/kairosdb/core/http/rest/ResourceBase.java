@@ -17,6 +17,7 @@ import org.kairosdb.core.aggregator.TestAggregatorFactory;
 import org.kairosdb.core.datapoints.*;
 import org.kairosdb.core.datastore.*;
 import org.kairosdb.core.exception.DatastoreException;
+import org.kairosdb.core.exception.KairosDBException;
 import org.kairosdb.core.groupby.TestGroupByFactory;
 import org.kairosdb.core.http.WebServer;
 import org.kairosdb.core.http.WebServletModule;
@@ -24,12 +25,15 @@ import org.kairosdb.core.http.rest.json.QueryParser;
 import org.kairosdb.core.http.rest.json.TestQueryPluginFactory;
 import org.kairosdb.core.processingstage.FeatureProcessingFactory;
 import org.kairosdb.core.processingstage.FeatureProcessor;
+import org.kairosdb.core.scheduler.KairosDBScheduler;
 import org.kairosdb.eventbus.EventBusConfiguration;
 import org.kairosdb.eventbus.FilterEventBus;
 import org.kairosdb.plugin.Aggregator;
 import org.kairosdb.plugin.GroupBy;
 import org.kairosdb.testing.Client;
-import org.kairosdb.util.SimpleStatsReporter;
+import org.quartz.JobDetail;
+import org.quartz.JobKey;
+import org.quartz.Trigger;
 import org.slf4j.bridge.SLF4JBridgeHandler;
 
 import java.io.IOException;
@@ -56,7 +60,7 @@ public abstract class ResourceBase
         SLF4JBridgeHandler.install();
 
         datastore = new TestDatastore();
-        queuingManager = new QueryQueuingManager(3, "localhost");
+        queuingManager = new QueryQueuingManager(3);
 
         Injector injector = Guice.createInjector(new WebServletModule(new KairosRootConfig()), new AbstractModule()
         {
@@ -107,13 +111,13 @@ public abstract class ResourceBase
                 bind(KairosDatastore.class).in(Singleton.class);
                 bind(FeaturesResource.class).in(Singleton.class);
                 bind(FeatureProcessor.class).to(KairosFeatureProcessor.class);
+                bind(KairosDBScheduler.class).toInstance(new FakeScheduler());
                 bind(new TypeLiteral<FeatureProcessingFactory<Aggregator>>() {}).to(TestAggregatorFactory.class);
                 bind(new TypeLiteral<FeatureProcessingFactory<GroupBy>>() {}).to(TestGroupByFactory.class);                bind(QueryParser.class).in(Singleton.class);
                 bind(QueryQueuingManager.class).toInstance(queuingManager);
                 bindConstant().annotatedWith(Names.named("HOSTNAME")).to("HOST");
                 bind(KairosDataPointFactory.class).to(GuiceKairosDataPointFactory.class);
                 bind(QueryPluginFactory.class).to(TestQueryPluginFactory.class);
-                bind(SimpleStatsReporter.class);
 
 
                 bind(DoubleDataPointFactory.class)
@@ -235,8 +239,20 @@ public abstract class ResourceBase
         }
 
         @Override
-        public void indexMetricTags(DatastoreMetricQuery query, int indexTtl) throws DatastoreException
+        public void indexMetricTags(DatastoreMetricQuery query) throws DatastoreException
         {
+        }
+
+        @Override
+        public long getMinTimeValue()
+        {
+            return Long.MIN_VALUE;
+        }
+
+        @Override
+        public long getMaxTimeValue()
+        {
+            return Long.MAX_VALUE;
         }
 
         @Override
@@ -318,6 +334,39 @@ public abstract class ResourceBase
         public Date getServiceKeyLastModifiedTime(String service, String serviceKey)
         {
             return null;
+        }
+    }
+
+    private static class FakeScheduler implements KairosDBScheduler
+    {
+        @Override
+        public void start() throws KairosDBException
+        {
+
+        }
+
+        @Override
+        public void stop()
+        {
+
+        }
+
+        @Override
+        public void schedule(JobDetail jobDetail, Trigger trigger) throws KairosDBException
+        {
+
+        }
+
+        @Override
+        public void cancel(JobKey jobKey) throws KairosDBException
+        {
+
+        }
+
+        @Override
+        public Set<String> getScheduledJobIds() throws KairosDBException
+        {
+            return Collections.emptySet();
         }
     }
 }

@@ -4,14 +4,9 @@ import com.google.common.collect.Sets;
 import com.google.inject.Inject;
 import org.kairosdb.util.SummingMap;
 
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
-import static org.kairosdb.util.Preconditions.checkNotNullOrEmpty;
+import static org.kairosdb.util.Preconditions.requireNonNullOrEmpty;
 
 public class ScoreBalancingAlgorithm implements BalancingAlgorithm
 {
@@ -23,6 +18,9 @@ public class ScoreBalancingAlgorithm implements BalancingAlgorithm
     @Override
     public Map<String, String> rebalance(Set<String> hosts, Map<String, Long> scores)
     {
+        //we sort them so this process is predictable
+        hosts = new TreeSet<>(hosts);
+        scores = new TreeMap<>(scores);
         Map<String, String> balancedAssignments = new HashMap<>();
         List<ServerAssignment> hostScores = new ArrayList<>();
 
@@ -82,7 +80,7 @@ public class ScoreBalancingAlgorithm implements BalancingAlgorithm
 
         ServerAssignment(String host)
         {
-            this.host = checkNotNullOrEmpty(host, "host cannot be null or empty");
+            this.host = requireNonNullOrEmpty(host, "host cannot be null or empty");
         }
 
         @Override

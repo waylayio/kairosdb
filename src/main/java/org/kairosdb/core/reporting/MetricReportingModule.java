@@ -30,16 +30,12 @@ public class MetricReportingModule extends ServletModule
 	@Override
 	protected void configureServlets()
 	{
-		bind(MetricReporterService.class).in(Singleton.class);
 
 		bind(MonitorFilter.class).in(Scopes.SINGLETON);
-		filter("/*").through(MonitorFilter.class);
+		filter("/api/*").through(MonitorFilter.class);
 
 		bind(DataPointsMonitor.class).in(Scopes.SINGLETON);
 
-		KairosMetricReporterListProvider reporterProvider = new KairosMetricReporterListProvider();
-		bind(KairosMetricReporterListProvider.class).toInstance(reporterProvider);
-
-		bindListener(Matchers.any(), reporterProvider);
+		bind(JavaMonitor.class).asEagerSingleton();
 	}
 }

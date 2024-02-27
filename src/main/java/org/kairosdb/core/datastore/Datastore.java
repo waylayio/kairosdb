@@ -26,5 +26,9 @@ public interface Datastore
 
 	TagSet queryMetricTags(DatastoreMetricQuery query) throws DatastoreException;
 
-	void indexMetricTags(DatastoreMetricQuery query, int indexTtl) throws DatastoreException;
+	void indexMetricTags(DatastoreMetricQuery query) throws DatastoreException;
+
+	long getMinTimeValue();
+
+	long getMaxTimeValue();
 }

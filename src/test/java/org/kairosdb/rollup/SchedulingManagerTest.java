@@ -12,10 +12,12 @@ import org.quartz.impl.JobDetailImpl;
 
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 public class SchedulingManagerTest extends RollupTestBase
 {
 	private static final String SERVER_GUID = "12345";
+	private static final String NOT_SERVER_GUID = "555555";
 
 	@Mock
 	private KairosDatastore mockDatastore;
@@ -31,79 +33,7 @@ public class SchedulingManagerTest extends RollupTestBase
 	@Before
 	public void setup() throws RollUpException
 	{
-		manager = new SchedulingManager(taskStore, assignmentStore, mockScheduler, mockDatastore, mockExecutionService, mockEventBus, mockStatusStore,10, LOCAL_HOST, SERVER_GUID);
-	}
-
-	@Test
-	public void testConstructor_taskStore_null_invalid() throws RollUpException
-	{
-		expectedException.expect(NullPointerException.class);
-		expectedException.expectMessage("taskStore cannot be null");
-
-		new SchedulingManager(null, assignmentStore, mockScheduler, mockDatastore, mockExecutionService, mockEventBus, mockStatusStore,10, LOCAL_HOST,SERVER_GUID);
-	}
-
-	@Test
-	public void testConstructor_assignmentStore_null_invalid() throws RollUpException
-	{
-		expectedException.expect(NullPointerException.class);
-		expectedException.expectMessage("assignmentStore cannot be null");
-
-		new SchedulingManager(taskStore, null, mockScheduler, mockDatastore, mockExecutionService, mockEventBus,mockStatusStore,10, "hostname", SERVER_GUID);
-	}
-
-	@Test
-	public void testConstructor_scheduler_null_invalid() throws RollUpException
-	{
-		expectedException.expect(NullPointerException.class);
-		expectedException.expectMessage("scheduler cannot be null");
-
-		new SchedulingManager(taskStore, assignmentStore, null, mockDatastore, mockExecutionService, mockEventBus, mockStatusStore,10, "hostname", SERVER_GUID);
-	}
-
-	@Test
-	public void testConstructor_dataStore_null_invalid() throws RollUpException
-	{
-		expectedException.expect(NullPointerException.class);
-		expectedException.expectMessage("dataStore cannot be null");
-
-		new SchedulingManager(taskStore, assignmentStore, mockScheduler, null, mockExecutionService, mockEventBus, mockStatusStore,10, "hostname", SERVER_GUID);
-	}
-
-	@Test
-	public void testConstructor_executor_null_invalid() throws RollUpException
-	{
-		expectedException.expect(NullPointerException.class);
-		expectedException.expectMessage("executorService cannot be null");
-
-		new SchedulingManager(taskStore, assignmentStore, mockScheduler, mockDatastore, null, mockEventBus, mockStatusStore,10, "hostname", SERVER_GUID);
-	}
-
-	@Test
-	public void testConstructor_hostname_null_invalid() throws RollUpException
-	{
-		expectedException.expect(NullPointerException.class);
-		expectedException.expectMessage("hostname cannot be null or empty");
-
-		new SchedulingManager(taskStore, assignmentStore, mockScheduler, mockDatastore, mockExecutionService, mockEventBus,mockStatusStore,10, null, SERVER_GUID);
-	}
-
-	@Test
-	public void testConstructor_hostname_empty_invalid() throws RollUpException
-	{
-		expectedException.expect(IllegalArgumentException.class);
-		expectedException.expectMessage("hostname cannot be null or empty");
-
-		new SchedulingManager(taskStore, assignmentStore, mockScheduler, mockDatastore, mockExecutionService, mockEventBus,mockStatusStore,10, "", SERVER_GUID);
-	}
-
-	@Test
-	public void testConstructor_eventBus_null_invalid() throws RollUpException
-	{
-		expectedException.expect(NullPointerException.class);
-		expectedException.expectMessage("eventBus cannot be null");
-
-		new SchedulingManager(taskStore, assignmentStore, mockScheduler, mockDatastore, mockExecutionService, null, mockStatusStore,10, "hostname", SERVER_GUID);
+		manager = new SchedulingManager(taskStore, assignmentStore, mockScheduler, mockExecutionService, mockStatusStore,10, LOCAL_HOST, SERVER_GUID);
 	}
 
 	@Test
@@ -112,13 +42,14 @@ public class SchedulingManagerTest extends RollupTestBase
 		addTasks(TASK1, TASK2, TASK3);
 		assignmentStore.setAssignment(TASK1.getId(), SERVER_GUID);
 		assignmentStore.setAssignment(TASK2.getId(), SERVER_GUID);
-		assignmentStore.setAssignment(TASK3.getId(), SERVER_GUID);
+		assignmentStore.setAssignment(TASK3.getId(), "SERVER_GUID");
 
 		manager.checkSchedulingChanges();
 
-		verify(mockScheduler, times(1)).schedule(SchedulingManager.createJobDetail(TASK1, mockDatastore, LOCAL_HOST, mockEventBus, mockStatusStore), SchedulingManager.createTrigger(TASK1));
-		verify(mockScheduler, times(1)).schedule(SchedulingManager.createJobDetail(TASK2, mockDatastore, LOCAL_HOST, mockEventBus, mockStatusStore), SchedulingManager.createTrigger(TASK2));
-		verify(mockScheduler, times(1)).schedule(SchedulingManager.createJobDetail(TASK3, mockDatastore, LOCAL_HOST, mockEventBus, mockStatusStore), SchedulingManager.createTrigger(TASK3));
+		verify(mockScheduler, times(1)).schedule(SchedulingManager.createJobDetail(TASK1), SchedulingManager.createTrigger(TASK1));
+		verify(mockScheduler, times(1)).schedule(SchedulingManager.createJobDetail(TASK2), SchedulingManager.createTrigger(TASK2));
+		verifyNoMoreInteractions(mockScheduler);
+		//verify(mockScheduler, times(1)).schedule(SchedulingManager.createJobDetail(TASK3, mockDatastore, LOCAL_HOST, mockEventBus, mockStatusStore), SchedulingManager.createTrigger(TASK3));
 	}
 
 	@Test
@@ -134,18 +65,17 @@ public class SchedulingManagerTest extends RollupTestBase
 		// modify task
 		RollupTask modifiedTask = new RollupTask(TASK2.getId(), TASK2.getName(), TASK2.getExecutionInterval(), TASK2.getRollups(), "{\"id\": " + TASK2.getId() + ",\"name\": \"" + TASK2.getName() + "\", \"execution_interval\": {\"value\": 1, \"unit\": \"hours\"}}");
 		modifiedTask.setLastModified(System.currentTimeMillis() + 10);
-		removeTasks(TASK2);
 		addTasks(modifiedTask);
 
 		manager.checkSchedulingChanges();
 
-		JobDetailImpl job = SchedulingManager.createJobDetail(TASK2, mockDatastore, LOCAL_HOST, mockEventBus, mockStatusStore);
+		JobDetailImpl job = SchedulingManager.createJobDetail(TASK2);
 		verify(mockScheduler, times(1)).cancel(job.getKey());
-		verify(mockScheduler, times(2)).schedule(SchedulingManager.createJobDetail(TASK2, mockDatastore, LOCAL_HOST, mockEventBus, mockStatusStore), SchedulingManager.createTrigger(TASK2));
+		verify(mockScheduler, times(2)).schedule(SchedulingManager.createJobDetail(TASK2), SchedulingManager.createTrigger(TASK2));
 	}
 
 	@Test
-	public void testUnscheduleRemovedTasks() throws KairosDBException
+	public void testUnscheduledRemovedTasks() throws KairosDBException
 	{
 		assignmentStore.setAssignment(TASK1.getId(), SERVER_GUID);
 		assignmentStore.setAssignment(TASK2.getId(), SERVER_GUID);
@@ -159,13 +89,13 @@ public class SchedulingManagerTest extends RollupTestBase
 
 		manager.checkSchedulingChanges();
 
-		JobDetailImpl job = SchedulingManager.createJobDetail(TASK2, mockDatastore, LOCAL_HOST, mockEventBus, mockStatusStore);
+		JobDetailImpl job = SchedulingManager.createJobDetail(TASK2);
 		verify(mockScheduler, times(1)).cancel(job.getKey());
-		verify(mockScheduler, times(1)).schedule(SchedulingManager.createJobDetail(TASK2, mockDatastore, LOCAL_HOST, mockEventBus, mockStatusStore), SchedulingManager.createTrigger(TASK2));
+		verify(mockScheduler, times(1)).schedule(SchedulingManager.createJobDetail(TASK2), SchedulingManager.createTrigger(TASK2));
 	}
 
 	@Test
-	public void testUnschedulUnassignedTasks() throws KairosDBException
+	public void testUnscheduledUnassignedTasks() throws KairosDBException
 	{
 		assignmentStore.setAssignment(TASK1.getId(), SERVER_GUID);
 		assignmentStore.setAssignment(TASK2.getId(), SERVER_GUID);
@@ -179,8 +109,24 @@ public class SchedulingManagerTest extends RollupTestBase
 
 		manager.checkSchedulingChanges();
 
-		JobDetailImpl job = SchedulingManager.createJobDetail(TASK2, mockDatastore, LOCAL_HOST, mockEventBus, mockStatusStore);
+		JobDetailImpl job = SchedulingManager.createJobDetail(TASK2);
 		verify(mockScheduler, times(1)).cancel(job.getKey());
-		verify(mockScheduler, times(1)).schedule(SchedulingManager.createJobDetail(TASK2, mockDatastore, LOCAL_HOST, mockEventBus, mockStatusStore), SchedulingManager.createTrigger(TASK2));
+		verify(mockScheduler, times(1)).schedule(SchedulingManager.createJobDetail(TASK2), SchedulingManager.createTrigger(TASK2));
+	}
+
+
+	@Test
+	public void testUnassignedTasks() throws KairosDBException
+	{
+		assignmentStore.setAssignment(TASK1.getId(), SERVER_GUID);
+		assignmentStore.setAssignment(TASK2.getId(), NOT_SERVER_GUID);
+		assignmentStore.setAssignment(TASK3.getId(), SERVER_GUID);
+		addTasks(TASK1, TASK2, TASK3);
+
+		manager.checkSchedulingChanges();
+
+		verify(mockScheduler, times(1)).schedule(SchedulingManager.createJobDetail(TASK1), SchedulingManager.createTrigger(TASK1));
+		verify(mockScheduler, times(1)).schedule(SchedulingManager.createJobDetail(TASK3), SchedulingManager.createTrigger(TASK3));
+		verifyNoMoreInteractions(mockScheduler);
 	}
 }

@@ -85,6 +85,8 @@ public class H2Datastore implements Datastore, ServiceKeyStore
 {
 	public static final Logger logger = LoggerFactory.getLogger(H2Datastore.class);
 	public static final String DATABASE_PATH_PROPERTY = "kairosdb.datastore.h2.database_path";
+	private static final long MIN_TIME_VALUE = Long.MIN_VALUE / 1000;
+	private static final long MAX_TIME_VALUE = Long.MAX_VALUE;
 
 	private Connection m_holdConnection;  //Connection that holds the database open
 	private final KairosDataPointFactory m_dataPointFactory;
@@ -173,13 +175,27 @@ public class H2Datastore implements Datastore, ServiceKeyStore
 		m_holdConnection.commit();
 	}
 
+	/*
+	 shutdown is only used by unit tests.
+	 */
+	public void shutdown()
+	{
+		try {
+			m_holdConnection.createStatement().execute("SHUTDOWN");
+		}
+		catch (SQLException e) {
+			logger.error("Failed shutdown:", e);
+		}
+	}
+
 	@Override
 	public void close()
 	{
 		try
 		{
-			if (m_holdConnection != null)
+			if (m_holdConnection != null) {
 				m_holdConnection.close();
+			}
 		}
 		catch (SQLException e)
 		{
@@ -517,9 +533,21 @@ public class H2Datastore implements Datastore, ServiceKeyStore
 	}
 
 	@Override
-	public void indexMetricTags(DatastoreMetricQuery query, int indexTtl) throws DatastoreException
+	public void indexMetricTags(DatastoreMetricQuery query) throws DatastoreException
 	{
 		// H2 does not have an index
+	}
+
+	@Override
+	public long getMinTimeValue()
+	{
+		return MIN_TIME_VALUE;
+	}
+
+	@Override
+	public long getMaxTimeValue()
+	{
+		return MAX_TIME_VALUE;
 	}
 
 	@Override
@@ -531,10 +559,13 @@ public class H2Datastore implements Datastore, ServiceKeyStore
 			ServiceIndex serviceIndex = ServiceIndex.factory.findOrCreate(service, serviceKey, key);
 			if (value != null) {
 				serviceIndex.setValue(value);
+				long now = System.currentTimeMillis();
+				//Need to make sure the modification time always gets updated
+				serviceIndex.setModificationTime(new java.sql.Timestamp(now));
 
 				// Update the service key timestamp
 				ServiceModification orCreate = ServiceModification.factory.findOrCreate(service, serviceKey);
-				orCreate.setModificationTime(new java.sql.Timestamp(System.currentTimeMillis()));
+				orCreate.setModificationTime(new java.sql.Timestamp(now));
 			}
 
 			GenOrmDataSource.commit();

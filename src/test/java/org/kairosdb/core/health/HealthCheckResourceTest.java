@@ -14,7 +14,7 @@ import java.util.Collections;
 import java.util.List;
 
 import static org.hamcrest.CoreMatchers.equalTo;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -84,7 +84,7 @@ public class HealthCheckResourceTest
 		{
 			List<HealthStatus> list = new ArrayList<HealthStatus>();
 			list.add(new TestHealthStatus());
-			list.add(new DatastoreQueryHealthCheck(datastore));
+			list.add(new DatastoreQueryHealthCheck(datastore, "kairosdb."));
 
 			return list;
 		}

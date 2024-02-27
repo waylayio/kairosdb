@@ -21,29 +21,35 @@ import org.json.JSONWriter;
 import org.kairosdb.core.DataPoint;
 import org.kairosdb.core.datastore.DataPointGroup;
 import org.kairosdb.core.groupby.GroupByResult;
+import org.kairosdb.metrics4j.collectors.LongCollector;
 
 import java.io.IOException;
 import java.io.Writer;
 import java.util.List;
 
-import static com.google.common.base.Preconditions.checkNotNull;
+import static java.util.Objects.requireNonNull;
 
 public class JsonFormatter implements DataFormatter
 {
 	@Override
-	public void format(Writer writer, Iterable<String> iterable) throws FormatterException
+	public void format(Writer writer, Iterable<String> iterable, LongCollector collector) throws FormatterException
 	{
-		checkNotNull(writer);
-		checkNotNull(iterable);
+		requireNonNull(writer);
+		requireNonNull(iterable);
 
 		try
 		{
 			JSONWriter jsonWriter = new JSONWriter(writer);
 			jsonWriter.object().key("results").array();
+			int counter = 0;
 			for (String string : iterable)
 			{
+				counter ++;
 				jsonWriter.value(string);
 			}
+			if (collector != null)
+				collector.put(counter);
+
 			jsonWriter.endArray().endObject();
 		}
 		catch (JSONException e)
@@ -56,8 +62,8 @@ public class JsonFormatter implements DataFormatter
 	public void format(Writer writer, List<List<DataPointGroup>> data) throws FormatterException
 	{
 
-		checkNotNull(writer);
-		checkNotNull(data);
+		requireNonNull(writer);
+		requireNonNull(data);
 		try
 		{
 			JSONWriter jsonWriter = new JSONWriter(writer);

@@ -1,16 +1,16 @@
 package org.kairosdb.core.queue;
 
-import org.kairosdb.core.DataPointSet;
-import org.kairosdb.core.datapoints.LongDataPointFactory;
-import org.kairosdb.core.datapoints.LongDataPointFactoryImpl;
-import org.kairosdb.core.reporting.KairosMetricReporter;
+import org.kairosdb.core.KairosPostConstructInit;
 import org.kairosdb.events.DataPointEvent;
+import org.kairosdb.metrics4j.MetricSourceManager;
+import org.kairosdb.metrics4j.annotation.Reported;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.inject.Inject;
 import javax.inject.Named;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
@@ -20,19 +20,15 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  Created by bhawkins on 12/15/16.
  */
-public class MemoryQueueProcessor extends QueueProcessor implements KairosMetricReporter
+public class MemoryQueueProcessor extends QueueProcessor implements KairosPostConstructInit
 {
 	public static final Logger logger = LoggerFactory.getLogger(MemoryQueueProcessor.class);
+	public static final QueueStats stats = MetricSourceManager.getSource(QueueStats.class);
+
 	private static final EventCompletionCallBack CALL_BACK = new VoidCompletionCallBack();
 
-	private AtomicInteger m_readFromQueueCount = new AtomicInteger();
 	private final BlockingQueue<DataPointEvent> m_queue;
 
-	@Inject @Named("HOSTNAME")
-	private String m_hostName = "none";
-
-	@Inject
-	private LongDataPointFactory m_dataPointFactory = new LongDataPointFactoryImpl();
 
 	@Inject
 	public MemoryQueueProcessor(
@@ -46,26 +42,16 @@ public class MemoryQueueProcessor extends QueueProcessor implements KairosMetric
 		super(executor, batchSize, minimumBatchSize, minBatchWait);
 
 		m_queue = new ArrayBlockingQueue<>(memoryQueueSize, true);
+
+		MetricSourceManager.addSource(QueueStats.class.getName(),
+				"memoryQueueSize", Collections.emptyMap(), "Amount of data in the memory queue", () -> m_queue.size());
 	}
 
 	@Override
-	public void addReportedMetrics(ArrayList<DataPointSet> metrics, long now)
+	public void init()
 	{
-		long readFromQueue = m_readFromQueueCount.getAndSet(0);
-		long arraySize = m_queue.size();
-
-		DataPointSet dps = new DataPointSet("kairosdb.queue.process_count");
-		dps.addTag("host", m_hostName);
-		dps.addDataPoint(m_dataPointFactory.createDataPoint(now, readFromQueue));
-
-		metrics.add(dps);
-
-		dps = new DataPointSet("kairosdb.queue.memory_queue.size");
-		dps.addTag("host", m_hostName);
-		dps.addDataPoint(m_dataPointFactory.createDataPoint(now, arraySize));
-
-		metrics.add(dps);
 	}
+
 
 	@Override
 	public void put(DataPointEvent dataPointEvent)
@@ -101,8 +87,7 @@ public class MemoryQueueProcessor extends QueueProcessor implements KairosMetric
 		}
 		m_queue.drainTo(ret, batchSize -1);
 
-		//System.out.println(ret.size());
-		m_readFromQueueCount.getAndAdd(ret.size());
+		stats.processCount("memory").put(ret.size());
 		return ret;
 	}
 

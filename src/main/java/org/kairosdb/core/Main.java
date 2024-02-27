@@ -46,6 +46,7 @@ import org.kairosdb.eventbus.Publisher;
 import org.kairosdb.events.DataPointEvent;
 import org.kairosdb.events.ShutdownEvent;
 import org.kairosdb.util.PluginClassLoader;
+import org.kairosdb.util.Util;
 import org.slf4j.LoggerFactory;
 import org.slf4j.bridge.SLF4JBridgeHandler;
 
@@ -79,11 +80,13 @@ import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.kairosdb.core.CoreModule.HOSTNAME_CONFIG;
+
 public class Main
 {
 	public static final Logger logger = (Logger) LoggerFactory.getLogger(Main.class);
 
-	public static final Charset UTF_8 = Charset.forName("UTF-8");
 	public static final String SERVICE_PREFIX = "kairosdb.service.";
 	public static final String SERVICE_FOLDER_PREFIX = "kairosdb.service_folder.";
 	public static final String KAIROSDB_SERVER_GUID = "kairosdb.server.guid";
@@ -211,10 +214,16 @@ public class Main
 
 		config.resolve();
 
-		/*for (String s : config)
-		{
-			System.out.println(s);
-		}*/
+		//Check hostname
+		String hostname = config.getProperty(HOSTNAME_CONFIG);
+		if (hostname == null)
+			hostname = Util.getHostName();
+
+
+		//Set some params for metric4j
+		System.setProperty("metric-prefix", config.getProperty("kairosdb.metric-prefix"));
+		System.setProperty("kairos-host", hostname);
+
 
 		// Create guid for this server
 		if (!config.hasPath(KAIROSDB_SERVER_GUID)) {
@@ -279,7 +288,7 @@ public class Main
 						if (constructor != null)
 							mod = (Module) constructor.newInstance(config);
 						else
-							mod = (Module) aClass.newInstance();
+							mod = (Module) aClass.getDeclaredConstructor().newInstance();
 
 						if (mod instanceof CoreModule)
 						{
@@ -356,7 +365,7 @@ public class Main
 				if (!StringUtils.isNullOrEmpty(arguments.exportFile))
 				{
 					Writer ps = new OutputStreamWriter(new FileOutputStream(arguments.exportFile,
-							arguments.appendToExportFile), "UTF-8");
+							arguments.appendToExportFile), UTF_8);
 					main.runExport(ps, arguments.exportMetricNames);
 					ps.flush();
 					ps.close();
@@ -364,7 +373,7 @@ public class Main
 				}
 				else
 				{
-					OutputStreamWriter writer = new OutputStreamWriter(System.out, "UTF-8");
+					OutputStreamWriter writer = new OutputStreamWriter(System.out, UTF_8);
 					main.runExport(writer, arguments.exportMetricNames);
 					writer.flush();
 				}

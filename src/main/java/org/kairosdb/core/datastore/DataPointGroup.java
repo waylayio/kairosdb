@@ -23,6 +23,10 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
+/**
+ This interface is used to group data points together when reading from the
+ datastore
+ */
 public interface DataPointGroup extends Iterator<DataPoint>, TagSet
 {
 	/**
@@ -30,6 +34,12 @@ public interface DataPointGroup extends Iterator<DataPoint>, TagSet
 	 @return Metric name
 	 */
 	public String getName();
+
+	/**
+	 * Retuns an alias for this metric that was passed with the query.
+	 * @return
+	 */
+	String getAlias();
 
 	/**
 	 * Returns the list of group by results or an empty list if the results are not grouped.

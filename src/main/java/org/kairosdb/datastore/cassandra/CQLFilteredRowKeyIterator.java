@@ -4,7 +4,6 @@ import com.datastax.driver.core.BoundStatement;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.ResultSetFuture;
 import com.datastax.driver.core.Row;
-import com.datastax.driver.core.Statement;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.SetMultimap;
 import com.google.common.util.concurrent.Futures;
@@ -13,8 +12,9 @@ import com.google.inject.Inject;
 import com.google.inject.assistedinject.Assisted;
 import com.google.inject.name.Named;
 import org.kairosdb.core.exception.DatastoreException;
-import org.kairosdb.core.reporting.ThreadReporter;
+import org.kairosdb.metrics4j.MetricSourceManager;
 
+import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.regex.Pattern;
@@ -24,6 +24,8 @@ import static org.kairosdb.datastore.cassandra.ClusterConnection.DATA_POINTS_TAB
 
 public class CQLFilteredRowKeyIterator implements Iterator<DataPointsRowKey>
 {
+	private static final CassandraStats stats = MetricSourceManager.getSource(CassandraStats.class);
+
 	private final SetMultimap<String, String> m_filterTags;
 	private final Set<String> m_filterTagNames;
 	private DataPointsRowKey m_nextKey;
@@ -31,6 +33,7 @@ public class CQLFilteredRowKeyIterator implements Iterator<DataPointsRowKey>
 	private ResultSet m_currentResultSet;
 	private final String m_metricName;
 	private final String m_clusterName;
+	private final RowSpec m_rowSpec;
 	private int m_rawRowKeyCount = 0;
 	private Map<String, Pattern> m_patternFilter;
 	private Set<DataPointsRowKey> m_returnedKeys;  //keep from returning duplicates, querying old and new indexes
@@ -48,6 +51,7 @@ public class CQLFilteredRowKeyIterator implements Iterator<DataPointsRowKey>
 		m_filterTags = HashMultimap.create();
 		m_filterTagNames = new HashSet<>();
 		m_patternFilter = new HashMap<>();
+		m_rowSpec = cluster.getRowSpec();
 
 		//Set of tags to pass to the RowKeyResultSetProcessor, it cannot contain
 		//tags that are also specified as regex values
@@ -131,7 +135,9 @@ public class CQLFilteredRowKeyIterator implements Iterator<DataPointsRowKey>
 			if (m_resultSets.hasNext())
 				m_currentResultSet = m_resultSets.next();
 
-			ThreadReporter.addDataPoint(CassandraDatastore.KEY_QUERY_TIME, System.currentTimeMillis() - timerStart);
+			//ThreadReporter.addDataPoint(CassandraDatastore.KEY_QUERY_TIME, System.currentTimeMillis() - timerStart);
+			//ThreadReporter.reportKeyQueryTime(Duration.ofMillis(System.currentTimeMillis() - timerStart));
+			stats.keyQueryTime().put(Duration.ofMillis(System.currentTimeMillis() - timerStart));
 		}
 		catch (InterruptedException e)
 		{
@@ -174,6 +180,8 @@ outer:
 
 				rowKey = new DataPointsRowKey(m_metricName, m_clusterName, record.getTimestamp(0).getTime(),
 						record.getString(1), new TreeMap<String, String>(record.getMap(2, String.class, String.class)));
+
+				rowKey.setTtl(record.getInt(3));
 			}
 			else
 				rowKey = CassandraDatastore.DATA_POINTS_ROW_KEY_SERIALIZER.fromByteBuffer(record.getBytes(0), m_clusterName);
@@ -211,7 +219,7 @@ outer:
 			BoundStatement statement = new BoundStatement(cluster.psRowKeyTimeQuery);
 			statement.setString(0, metricName);
 			statement.setString(1, DATA_POINTS_TABLE_NAME);
-			statement.setTimestamp(2, new Date(CassandraDatastore.calculateRowTime(startTime)));
+			statement.setTimestamp(2, new Date(m_rowSpec.calculateRowTime(startTime)));
 			statement.setTimestamp(3, new Date(endTime));
 			statement.setConsistencyLevel(cluster.getReadConsistencyLevel());
 
@@ -233,10 +241,10 @@ outer:
 			String metricName, long startTime, long endTime)
 	{
 		DataPointsRowKey startKey = new DataPointsRowKey(metricName, m_clusterName,
-				CassandraDatastore.calculateRowTime(startTime), "");
+				m_rowSpec.calculateRowTime(startTime), "");
 
 		DataPointsRowKey endKey = new DataPointsRowKey(metricName, m_clusterName,
-				CassandraDatastore.calculateRowTime(endTime), "");
+				m_rowSpec.calculateRowTime(endTime), "");
 		endKey.setEndSearchKey(true);
 
 		boundStatement.setBytesUnsafe(1, CassandraDatastore.DATA_POINTS_ROW_KEY_SERIALIZER.toByteBuffer(startKey));
@@ -263,7 +271,8 @@ outer:
 		if (m_nextKey == null)
 		{
 			//todo make this a common atomic value
-			ThreadReporter.addDataPoint(CassandraDatastore.RAW_ROW_KEY_COUNT, m_rawRowKeyCount);
+			stats.rawRowKeyCount().put(m_rawRowKeyCount);
+			//ThreadReporter.addDataPoint(CassandraDatastore.RAW_ROW_KEY_COUNT, m_rawRowKeyCount);
 		}
 
 		return (m_nextKey != null);

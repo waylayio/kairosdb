@@ -15,12 +15,14 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.protocol.HttpClientContext;
 import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
-import org.apache.http.conn.ssl.SSLContexts;
+import org.apache.http.conn.ssl.TrustSelfSignedStrategy;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.client.HttpClients;
+import org.apache.http.ssl.SSLContexts;
+import org.apache.http.ssl.TrustStrategy;
 
 import javax.net.ssl.SSLContext;
 import java.io.FileInputStream;
@@ -32,6 +34,7 @@ import java.security.cert.CertificateException;
 import java.util.HashMap;
 import java.util.Map;
 
+import static javax.ws.rs.core.HttpHeaders.ACCEPT;
 import static javax.ws.rs.core.HttpHeaders.CONTENT_TYPE;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 
@@ -46,6 +49,7 @@ public class Client
 	{
 		client = HttpClients.createDefault();
 		addHeader(CONTENT_TYPE, APPLICATION_JSON);
+		addHeader(ACCEPT, APPLICATION_JSON);
 	}
 
 	public Client(boolean disableCompression)
@@ -55,11 +59,13 @@ public class Client
 		client = builder.build();
 
 		addHeader(CONTENT_TYPE, APPLICATION_JSON);
+		addHeader(ACCEPT, APPLICATION_JSON);
 	}
 
 	public Client(String keystorePath, String keystorePassword) throws KeyStoreException, IOException, CertificateException, NoSuchAlgorithmException, UnrecoverableKeyException, KeyManagementException
 	{
 		addHeader(CONTENT_TYPE, APPLICATION_JSON);
+		addHeader(ACCEPT, APPLICATION_JSON);
 		HttpClientBuilder b = HttpClientBuilder.create();
 		if (keystorePath != null)
 		{
@@ -75,7 +81,7 @@ public class Client
 			}
 
 			SSLContext sslContext = SSLContexts.custom()
-			        .loadTrustMaterial(truststore)
+			        .loadTrustMaterial(truststore, new TrustSelfSignedStrategy())
 			        .build();
 			b.setSSLSocketFactory(new SSLConnectionSocketFactory(sslContext));
 		}

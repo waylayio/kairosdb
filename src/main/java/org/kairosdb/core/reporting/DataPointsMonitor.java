@@ -15,6 +15,9 @@ import org.kairosdb.core.datapoints.LongDataPointFactoryImpl;
 import org.kairosdb.core.exception.KairosDBException;
 import org.kairosdb.eventbus.Subscribe;
 import org.kairosdb.events.DataPointEvent;
+import org.kairosdb.metrics4j.MetricSourceManager;
+import org.kairosdb.metrics4j.annotation.Key;
+import org.kairosdb.metrics4j.collectors.LongCollector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,77 +29,32 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 
-public class DataPointsMonitor implements KairosMetricReporter, KairosDBService
+public class DataPointsMonitor implements KairosDBService
 {
-	public static final Logger logger = LoggerFactory.getLogger(DataPointsMonitor.class);
-	public static final String METRIC_NAME = "kairosdb.metric_counters";
+	private static final MetricCounters metrics = MetricSourceManager.getSource(MetricCounters.class);
+	private final String m_prefix;
 
-	private volatile ConcurrentMap<String, AtomicInteger> m_metricCounters;
-	private String m_hostName;
+	public interface MetricCounters
+	{
+		LongCollector countMetric(@Key("metric_name") String metricName);
+	}
 
 	@Inject
-	private LongDataPointFactory m_dataPointFactory = new LongDataPointFactoryImpl();
-
-	@Inject
-	public DataPointsMonitor(@Named("HOSTNAME") String hostName)
+	public DataPointsMonitor(@Named("kairosdb.metric-prefix") String prefix)
 	{
-		m_metricCounters = new ConcurrentHashMap<String, AtomicInteger>();
-		m_hostName = hostName;
+		m_prefix = prefix;
 	}
 
-	private void addCounter(String name, int count)
-	{
-		AtomicInteger ai = m_metricCounters.get(name);
-
-		if (ai == null)
-		{
-			ai = new AtomicInteger();
-			AtomicInteger mapValue = m_metricCounters.putIfAbsent(name, ai);
-			ai = (mapValue != null ? mapValue : ai); //This handles the case if one snuck in on another thread.
-		}
-
-		ai.addAndGet(count);
-	}
-
-
-	private Map<String, AtomicInteger> getAndClearCounters()
-	{
-		Map<String, AtomicInteger> ret = m_metricCounters;
-
-		m_metricCounters = new ConcurrentHashMap<String, AtomicInteger>();
-
-		return (ret);
-	}
-
-
-	@Override
-	public List<DataPointSet> getMetrics(long now)
-	{
-		List<DataPointSet> ret = new ArrayList<DataPointSet>();
-
-		Map<String, AtomicInteger> counters = getAndClearCounters();
-
-		for (String name : counters.keySet())
-		{
-			DataPointSet dps = new DataPointSet(METRIC_NAME);
-			dps.addTag("metric_name", name);
-			dps.addDataPoint(m_dataPointFactory.createDataPoint(now, counters.get(name).longValue()));
-
-			ret.add(dps);
-		}
-
-		return (ret);
-	}
 
 	@Subscribe
 	public void dataPoint(DataPointEvent event)
 	{
 		String metricName = event.getMetricName();
 
-		if (metricName.startsWith("kairosdb"))
+		if (metricName.startsWith(m_prefix))
 			return; //Skip our own metrics.
 
-		addCounter(metricName, 1);
+		metrics.countMetric(metricName).put(1);
 	}
 
 	@Override

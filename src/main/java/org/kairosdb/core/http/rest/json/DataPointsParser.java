@@ -16,6 +16,7 @@
 
 package org.kairosdb.core.http.rest.json;
 
+import com.google.common.base.Stopwatch;
 import com.google.common.collect.ImmutableSortedMap;
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
@@ -36,8 +37,9 @@ import java.io.IOException;
 import java.io.Reader;
 import java.util.Collections;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
-import static com.google.common.base.Preconditions.checkNotNull;
+import static java.util.Objects.requireNonNull;
 
 /**
  Originally used Jackson to parse, but this approach failed for a very large JSON because
@@ -56,26 +58,26 @@ public class DataPointsParser
 		return dataPointCount;
 	}
 
-	public int getIngestTime()
+	public long getIngestTime()
 	{
 		return ingestTime;
 	}
 
 	private int dataPointCount;
-	private int ingestTime;
+	private long ingestTime;
 
 	public DataPointsParser(Publisher<DataPointEvent> publisher, Reader stream, Gson gson,
 			KairosDataPointFactory dataPointFactory)
 	{
 		m_publisher = publisher;
-		this.inputStream = checkNotNull(stream);
+		this.inputStream = requireNonNull(stream);
 		this.gson = gson;
 		this.dataPointFactory = dataPointFactory;
 	}
 
 	public ValidationErrors parse() throws IOException, DatastoreException
 	{
-		long start = System.currentTimeMillis();
+		Stopwatch timer = Stopwatch.createStarted();
 		ValidationErrors validationErrors = new ValidationErrors();
 
 		try (JsonReader reader = new JsonReader(inputStream))
@@ -116,7 +118,7 @@ public class DataPointsParser
 			validationErrors.addErrorMessage("Invalid json. No content due to end of input.");
 		}
 
-		ingestTime = (int) (System.currentTimeMillis() - start);
+		ingestTime = timer.elapsed(TimeUnit.NANOSECONDS);
 
 		return validationErrors;
 	}
@@ -264,8 +266,13 @@ public class DataPointsParser
 				//Validator.isValidateCharacterSet(validationErrors, context, metric.getName());
 			}
 
-			if (metric.getTimestamp() != null)
-				Validator.isNotNullOrEmpty(validationErrors, context.setAttribute("value"), metric.getValue());
+			//if there is a timestamp they are passing a single data point vs an array of data points
+			if (metric.getTimestamp() != null) {
+				if ("string".equals(metric.getType()))
+					Validator.isNotNull(validationErrors, context.setAttribute("value"), metric.getValue());
+				else
+					Validator.isNotNullOrEmpty(validationErrors, context.setAttribute("value"), metric.getValue());
+			}
 			else if (metric.getValue() != null && !metric.getValue().isJsonNull())
 				Validator.isNotNull(validationErrors, context.setAttribute("timestamp"), metric.getTimestamp());
 			//				Validator.isGreaterThanOrEqualTo(validationErrors, context.setAttribute("timestamp"), metric.getTimestamp(), 1);
@@ -358,8 +365,17 @@ public class DataPointsParser
 						if (dataPoint.length > 2)
 							type = dataPoint[2].getAsString();
 
-						if (!Validator.isNotNullOrEmpty(validationErrors, dataPointContext.setAttribute("value"), dataPoint[1]))
-							continue;
+						//String type data can be empty
+						if ("string".equals(type))
+						{
+							if (!Validator.isNotNull(validationErrors, dataPointContext.setAttribute("value"), dataPoint[1]))
+								continue;
+						}
+						else
+						{
+							if (!Validator.isNotNullOrEmpty(validationErrors, dataPointContext.setAttribute("value"), dataPoint[1]))
+								continue;
+						}
 
 						if (type == null)
 						{

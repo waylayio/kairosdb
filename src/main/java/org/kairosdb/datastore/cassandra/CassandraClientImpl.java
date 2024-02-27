@@ -1,12 +1,10 @@
 package org.kairosdb.datastore.cassandra;
 
-import com.codahale.metrics.Snapshot;
 import com.datastax.driver.core.AuthProvider;
 import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.HostDistance;
 import com.datastax.driver.core.Metrics;
 import com.datastax.driver.core.PoolingOptions;
-import com.datastax.driver.core.ProtocolOptions;
 import com.datastax.driver.core.QueryOptions;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.TimestampGenerator;
@@ -15,26 +13,24 @@ import com.datastax.driver.core.policies.ExponentialReconnectionPolicy;
 import com.datastax.driver.core.policies.LoadBalancingPolicy;
 import com.datastax.driver.core.policies.RoundRobinPolicy;
 import com.datastax.driver.core.policies.TokenAwarePolicy;
+import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
-import com.google.inject.name.Named;
-import org.kairosdb.core.DataPointSet;
 import org.kairosdb.core.KairosPostConstructInit;
-import org.kairosdb.core.datapoints.DoubleDataPointFactory;
-import org.kairosdb.core.datapoints.DoubleDataPointFactoryImpl;
-import org.kairosdb.core.datapoints.LongDataPointFactory;
-import org.kairosdb.core.datapoints.LongDataPointFactoryImpl;
-import org.kairosdb.core.reporting.KairosMetricReporter;
+import org.kairosdb.metrics4j.MetricSourceManager;
+import org.kairosdb.metrics4j.annotation.Reported;
+import org.kairosdb.metrics4j.annotation.Snapshot;
+import org.kairosdb.metrics4j.collectors.MetricCollector;
+import org.kairosdb.metrics4j.reporting.DoubleValue;
+import org.kairosdb.metrics4j.reporting.MetricReporter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 
 /**
  Created by bhawkins on 3/4/15.
  */
-public class CassandraClientImpl implements CassandraClient, KairosMetricReporter, KairosPostConstructInit
+public class CassandraClientImpl implements CassandraClient, KairosPostConstructInit
 {
 	public static final Logger logger = LoggerFactory.getLogger(CassandraClientImpl.class);
 
@@ -43,15 +39,6 @@ public class CassandraClientImpl implements CassandraClient, KairosMetricReporte
 	private final String m_replication;
 	private LoadBalancingPolicy m_writeLoadBalancingPolicy;
 
-	@Inject
-	@Named("HOSTNAME")
-	private String m_hostName = "localhost";
-
-	@Inject
-	private LongDataPointFactory m_longDataPointFactory = new LongDataPointFactoryImpl();
-
-	@Inject
-	private DoubleDataPointFactory m_doubleDataPointFactory = new DoubleDataPointFactoryImpl();
 
 	@Inject
 	private KairosRetryPolicy m_kairosRetryPolicy = new KairosRetryPolicy(1);
@@ -128,6 +115,14 @@ public class CassandraClientImpl implements CassandraClient, KairosMetricReporte
 			builder.withSSL();
 
 		m_cluster = builder.build();
+
+		Map<String, String> tags = ImmutableMap.of("cluster", m_clusterName);
+		ClientMetrics clientMetrics = new ClientMetrics();
+		//this reports all the @Reported annotated methods
+		MetricSourceManager.addSource(clientMetrics, tags);
+		//This reports for the request timer that needs a snapshot done first
+		MetricSourceManager.addSource(ClientMetrics.class.getName(), "requestsTimer", tags,
+				"Client requests timer", clientMetrics);
 	}
 
 	public LoadBalancingPolicy getWriteLoadBalancingPolicy()
@@ -168,29 +163,106 @@ public class CassandraClientImpl implements CassandraClient, KairosMetricReporte
 	}
 
 
-	private DataPointSet newDataPointSet(String metricPrefix, String metricSuffix,
-			long now, long value)
+	public class ClientMetrics implements MetricCollector
 	{
-		DataPointSet dps = new DataPointSet(new StringBuilder(metricPrefix).append(".").append(metricSuffix).toString());
-		dps.addTag("host", m_hostName);
-		dps.addTag("cluster", m_clusterName);
-		dps.addDataPoint(m_longDataPointFactory.createDataPoint(now, value));
+		private Metrics m_metrics;
+		private com.codahale.metrics.Snapshot m_snapshot;
 
-		return dps;
+		public ClientMetrics()
+		{
+
+		}
+
+		@Snapshot
+		public void takeSnapshot()
+		{
+			m_metrics = m_cluster.getMetrics();
+			m_snapshot = m_metrics.getRequestsTimer().getSnapshot();
+		}
+
+		@Reported(help = "Cleint bytes sent to Cassandra")
+		public long bytesSent()
+		{
+			return m_metrics.getBytesSent().getCount();
+		}
+
+		@Reported(help = "Cleint bytes received from Cassandra")
+		public long bytesReceived()
+		{
+			return m_metrics.getBytesReceived().getCount();
+		}
+
+		@Reported(help = "Client connection errors")
+		public long connectionErrors()
+		{
+			return m_metrics.getErrorMetrics().getConnectionErrors().getCount();
+		}
+
+		@Reported(help = "Client blocking executor queue depth")
+		public long blockingExecutorQueueDepth()
+		{
+			return m_metrics.getBlockingExecutorQueueDepth().getValue();
+		}
+
+		@Reported(help = "Number of connections to hosts")
+		public long connectedToHosts()
+		{
+			return m_metrics.getConnectedToHosts().getValue();
+		}
+
+		@Reported(help = "Client executor queue depth")
+		public long executorQueueDepth()
+		{
+			return m_metrics.getExecutorQueueDepth().getValue();
+		}
+
+		@Reported(help = "Number of known hosts")
+		public long knownHosts()
+		{
+			return m_metrics.getKnownHosts().getValue();
+		}
+
+		@Reported(help = "Number of open connections")
+		public long openConnections()
+		{
+			return m_metrics.getOpenConnections().getValue();
+		}
+
+		@Reported(help = "Queue size for reconnection scheduler")
+		public long reconnectionSchedulerQueueSize()
+		{
+			return m_metrics.getReconnectionSchedulerQueueSize().getValue();
+		}
+
+		@Reported(help = "Queue size for task scheduler")
+		public long taskSchedulerQueueSize()
+		{
+			return m_metrics.getTaskSchedulerQueueSize().getValue();
+		}
+
+		@Reported(help = "Number of trashed connections")
+		public long trashedConnections()
+		{
+			return m_metrics.getTrashedConnections().getValue();
+		}
+
+		@Override
+		public void reportMetric(MetricReporter metricReporter)
+		{
+			metricReporter.put("max", new DoubleValue(m_snapshot.getMax()));
+			metricReporter.put("min", new DoubleValue(m_snapshot.getMin()));
+			metricReporter.put("avg", new DoubleValue(m_snapshot.getMean()));
+			metricReporter.put("count", new DoubleValue(m_snapshot.size()));
+		}
+
+		@Override
+		public void setContextProperties(Map<String, String> map)
+		{
+
+		}
 	}
 
-	private DataPointSet newDataPointSet(String metricPrefix, String metricSuffix,
-			long now, double value)
-	{
-		DataPointSet dps = new DataPointSet(new StringBuilder(metricPrefix).append(".").append(metricSuffix).toString());
-		dps.addTag("host", m_hostName);
-		dps.addTag("cluster", m_clusterName);
-		dps.addDataPoint(m_doubleDataPointFactory.createDataPoint(now, value));
-
-		return dps;
-	}
-
-	@Override
+	/*@Override
 	public List<DataPointSet> getMetrics(long now)
 	{
 		String prefix = "kairosdb.datastore.cassandra.client";
@@ -224,6 +296,12 @@ public class CassandraClientImpl implements CassandraClient, KairosMetricReporte
 		ret.add(newDataPointSet(prefix, "trashed_connections", now,
 				metrics.getTrashedConnections().getValue()));
 
+		ret.add(newDataPointSet(prefix, "bytes_sent", now,
+				metrics.getBytesSent().getCount()));
+
+		ret.add(newDataPointSet(prefix, "bytes_received", now,
+				metrics.getBytesReceived().getCount()));
+
 		Snapshot snapshot = metrics.getRequestsTimer().getSnapshot();
 		prefix = prefix + ".requests_timer";
 		ret.add(newDataPointSet(prefix, "max", now,
@@ -239,5 +317,5 @@ public class CassandraClientImpl implements CassandraClient, KairosMetricReporte
 				snapshot.size()));
 
 		return ret;
-	}
+	}*/
 }

@@ -15,6 +15,7 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.Charset;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
@@ -23,7 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import static com.google.common.base.Preconditions.checkNotNull;
+import static java.util.Objects.requireNonNull;
 
 public class RollUpTasksStoreImpl implements RollUpTasksStore
 {
@@ -34,14 +35,14 @@ public class RollUpTasksStoreImpl implements RollUpTasksStore
     static final String SERVICE_KEY_CONFIG = "Config";
 
     private ServiceKeyStore keyStore;
-    private final QueryParser parser;
+    private QueryParser parser;
+    private String oldFileName = OLD_FILENAME;
 
-    @Inject
-    public RollUpTasksStoreImpl(ServiceKeyStore keyStore, QueryParser parser)
-            throws RollUpException
+    public RollUpTasksStoreImpl(ServiceKeyStore keyStore, QueryParser parser, String oldFileName) throws RollUpException
     {
-        this.keyStore = checkNotNull(keyStore, "keyStore cannot be null");
-        this.parser = checkNotNull(parser, "parser cannot be null");
+        this.keyStore = requireNonNull(keyStore, "keyStore cannot be null");
+        this.parser = requireNonNull(parser, "parser cannot be null");
+        this.oldFileName = oldFileName;
 
         try {
             importFromOldFile();
@@ -50,15 +51,21 @@ public class RollUpTasksStoreImpl implements RollUpTasksStore
             throw new RollUpException("Failed to complete import from old roll-up format to new format in the datastore.", e);
         }
     }
+    @Inject
+    public RollUpTasksStoreImpl(ServiceKeyStore keyStore, QueryParser parser)
+            throws RollUpException
+    {
+        this(keyStore, parser, OLD_FILENAME);
+    }
 
     @Override
     public void write(List<RollupTask> tasks)
             throws RollUpException
     {
-        checkNotNull(tasks, "tasks cannot be null");
+        requireNonNull(tasks, "tasks cannot be null");
         try {
             for (RollupTask task : tasks) {
-                checkNotNull(task, "task cannot be null");
+                requireNonNull(task, "task cannot be null");
                 keyStore.setValue(SERVICE, SERVICE_KEY_CONFIG, task.getId(), task.getJson());
             }
         }
@@ -119,7 +126,9 @@ public class RollUpTasksStoreImpl implements RollUpTasksStore
             if (value == null) {
                 return null;
             }
-            return parser.parseRollupTask(value.getValue());
+            RollupTask rollupTask = parser.parseRollupTask(value.getValue());
+            rollupTask.setLastModified(value.getLastModified().getTime());
+            return rollupTask;
         }
         catch (DatastoreException e) {
             throw new RollUpException("Failed to read roll-up task " + id, e);
@@ -165,9 +174,9 @@ public class RollUpTasksStoreImpl implements RollUpTasksStore
     private void importFromOldFile()
             throws RollUpException, IOException, QueryException
     {
-        File oldFile = new File(OLD_FILENAME);
+        File oldFile = new File(oldFileName);
         if (oldFile.exists()) {
-            List<String> taskJson = FileUtils.readLines(oldFile, Charset.forName("UTF-8"));
+            List<String> taskJson = Files.readAllLines(oldFile.toPath(), Charset.forName("UTF-8"));
             List<RollupTask> tasks = new ArrayList<>();
             for (String json : taskJson) {
                 RollupTask task = parser.parseRollupTask(json);

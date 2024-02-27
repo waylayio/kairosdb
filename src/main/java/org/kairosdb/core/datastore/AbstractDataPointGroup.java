@@ -24,11 +24,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import static com.google.common.base.Preconditions.checkNotNull;
+import static java.util.Objects.requireNonNull;
 
 public abstract class AbstractDataPointGroup implements DataPointGroup
 {
 	private String name;
+	private String alias;
 	private TreeMultimap<String, String> tags = TreeMultimap.create();
 	private List<GroupByResult> groupByResult = new ArrayList<>();
 
@@ -39,7 +40,7 @@ public abstract class AbstractDataPointGroup implements DataPointGroup
 
 	public AbstractDataPointGroup(String name, SetMultimap<String, String> tags)
 	{
-		this.name = Preconditions.checkNotNullOrEmpty(name);
+		this.name = Preconditions.requireNonNullOrEmpty(name);
 		this.tags = TreeMultimap.create(tags);
 	}
 
@@ -71,7 +72,7 @@ public abstract class AbstractDataPointGroup implements DataPointGroup
 
 	public void addGroupByResult(GroupByResult groupByResult)
 	{
-		this.groupByResult.add(checkNotNull(groupByResult));
+		this.groupByResult.add(requireNonNull(groupByResult));
 	}
 
 	public List<GroupByResult> getGroupByResult()
@@ -82,6 +83,17 @@ public abstract class AbstractDataPointGroup implements DataPointGroup
 	public String getName()
 	{
 		return name;
+	}
+
+	@Override
+	public String getAlias()
+	{
+		return alias;
+	}
+
+	public void setAlias(String alias)
+	{
+		this.alias = alias;
 	}
 
 	@Override
