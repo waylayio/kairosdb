@@ -22,6 +22,7 @@ import org.kairosdb.core.datapoints.DoubleDataPoint;
 import org.kairosdb.core.datapoints.LongDataPoint;
 import org.kairosdb.core.datapoints.StringDataPoint;
 import org.kairosdb.core.datastore.DataPointGroup;
+import org.kairosdb.core.datastore.Order;
 import org.kairosdb.testing.ListDataPointGroup;
 
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -42,7 +43,7 @@ public class FilterAggregatorTest
 		FilterAggregator filterAggregator = new FilterAggregator();
 		filterAggregator.setFilterOp(FilterAggregator.FilterOperation.LT);
 		filterAggregator.setThreshold(0.0);
-		DataPointGroup results = filterAggregator.aggregate(group);
+		DataPointGroup results = filterAggregator.aggregate(group, Order.ASC);
 
 		assertThat(results.hasNext(), equalTo(true));
 		DataPoint dp = results.next();
@@ -70,7 +71,7 @@ public class FilterAggregatorTest
 		FilterAggregator filterAggregator = new FilterAggregator();
 		filterAggregator.setFilterOp(FilterAggregator.FilterOperation.LT);
 		filterAggregator.setThreshold(0.0);
-		DataPointGroup results = filterAggregator.aggregate(group);
+		DataPointGroup results = filterAggregator.aggregate(group, Order.ASC);
 
 		assertThat(results.hasNext(), equalTo(false));
 	}
@@ -89,7 +90,7 @@ public class FilterAggregatorTest
 		FilterAggregator filterAggregator = new FilterAggregator();
 		filterAggregator.setFilterOp(FilterAggregator.FilterOperation.LTE);
 		filterAggregator.setThreshold(15.0);
-		DataPointGroup results = filterAggregator.aggregate(group);
+		DataPointGroup results = filterAggregator.aggregate(group, Order.ASC);
 
 		assertThat(results.hasNext(), equalTo(true));
 		DataPoint dp = results.next();
@@ -123,7 +124,7 @@ public class FilterAggregatorTest
 		FilterAggregator filterAggregator = new FilterAggregator();
 		filterAggregator.setFilterOp(FilterAggregator.FilterOperation.GT);
 		filterAggregator.setThreshold(20.0);
-		DataPointGroup results = filterAggregator.aggregate(group);
+		DataPointGroup results = filterAggregator.aggregate(group, Order.ASC);
 
 		assertThat(results.hasNext(), equalTo(true));
 		DataPoint dp = results.next();
@@ -162,7 +163,7 @@ public class FilterAggregatorTest
 		FilterAggregator filterAggregator = new FilterAggregator();
 		filterAggregator.setFilterOp(FilterAggregator.FilterOperation.GTE);
 		filterAggregator.setThreshold(20.0);
-		DataPointGroup results = filterAggregator.aggregate(group);
+		DataPointGroup results = filterAggregator.aggregate(group, Order.ASC);
 
 		assertThat(results.hasNext(), equalTo(true));
 		DataPoint dp = results.next();
@@ -196,7 +197,7 @@ public class FilterAggregatorTest
 		FilterAggregator filterAggregator = new FilterAggregator();
 		filterAggregator.setFilterOp(FilterAggregator.FilterOperation.EQUAL);
 		filterAggregator.setThreshold(10.0);
-		DataPointGroup results = filterAggregator.aggregate(group);
+		DataPointGroup results = filterAggregator.aggregate(group, Order.ASC);
 
 		assertThat(results.hasNext(), equalTo(true));
 		DataPoint dp = results.next();
@@ -235,7 +236,7 @@ public class FilterAggregatorTest
 		FilterAggregator filterAggregator = new FilterAggregator();
 		filterAggregator.setFilterOp(FilterAggregator.FilterOperation.NE);
 		filterAggregator.setThreshold(10.0);
-		DataPointGroup results = filterAggregator.aggregate(group);
+		DataPointGroup results = filterAggregator.aggregate(group, Order.ASC);
 
 		assertThat(results.hasNext(), equalTo(true));
 		DataPoint dp = results.next();
@@ -264,7 +265,7 @@ public class FilterAggregatorTest
 		FilterAggregator filterAggregator = new FilterAggregator();
 		filterAggregator.setFilterOp(FilterAggregator.FilterOperation.EQUAL);
 		filterAggregator.setThreshold("alfa");
-		DataPointGroup results = filterAggregator.aggregate(group);
+		DataPointGroup results = filterAggregator.aggregate(group, Order.ASC);
 
 		assertThat(results.hasNext(), equalTo(true));
 		DataPoint dp = results.next();
@@ -301,7 +302,7 @@ public class FilterAggregatorTest
 		FilterAggregator filterAggregator = new FilterAggregator();
 		filterAggregator.setFilterOp(FilterAggregator.FilterOperation.GTE);
 		filterAggregator.setThreshold(13.43543);
-		DataPointGroup results = filterAggregator.aggregate(group);
+		DataPointGroup results = filterAggregator.aggregate(group, Order.ASC);
 
 		assertThat(results.hasNext(), equalTo(true));
 		DataPoint dp = results.next();
@@ -325,7 +326,7 @@ public class FilterAggregatorTest
 		FilterAggregator filterAggregator = new FilterAggregator();
 		filterAggregator.setFilterOp(FilterAggregator.FilterOperation.EQUAL);
 		filterAggregator.setThreshold("beta");
-		DataPointGroup results = filterAggregator.aggregate(group);
+		DataPointGroup results = filterAggregator.aggregate(group, Order.ASC);
 
 		assertThat(results.hasNext(), equalTo(true));
 		DataPoint dp = results.next();

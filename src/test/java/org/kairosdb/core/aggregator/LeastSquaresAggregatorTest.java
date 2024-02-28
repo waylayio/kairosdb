@@ -6,6 +6,7 @@ import org.kairosdb.core.DataPoint;
 import org.kairosdb.core.datapoints.DoubleDataPointFactoryImpl;
 import org.kairosdb.core.datapoints.LongDataPoint;
 import org.kairosdb.core.datastore.DataPointGroup;
+import org.kairosdb.core.datastore.Order;
 import org.kairosdb.core.datastore.TimeUnit;
 import org.kairosdb.testing.ListDataPointGroup;
 
@@ -37,7 +38,7 @@ public class LeastSquaresAggregatorTest
 	{
 		ListDataPointGroup group = new ListDataPointGroup("group");
 
-		DataPointGroup result = m_aggregator.aggregate(group);
+		DataPointGroup result = m_aggregator.aggregate(group, Order.ASC);
 
 		assertThat(result.hasNext(), equalTo(false));
 	}
@@ -48,7 +49,7 @@ public class LeastSquaresAggregatorTest
 		ListDataPointGroup group = new ListDataPointGroup("group");
 		group.addDataPoint(new LongDataPoint(1, 10));
 
-		DataPointGroup result = m_aggregator.aggregate(group);
+		DataPointGroup result = m_aggregator.aggregate(group, Order.ASC);
 
 		DataPoint dp = result.next();
 		assertThat(dp.getTimestamp(), equalTo(1L));
@@ -65,7 +66,7 @@ public class LeastSquaresAggregatorTest
 		group.addDataPoint(new LongDataPoint(1, 10));
 		group.addDataPoint(new LongDataPoint(2, 20));
 
-		DataPointGroup result = m_aggregator.aggregate(group);
+		DataPointGroup result = m_aggregator.aggregate(group, Order.ASC);
 
 		DataPoint dp = result.next();
 		assertThat(dp.getTimestamp(), equalTo(1L));

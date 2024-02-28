@@ -20,6 +20,7 @@ import org.kairosdb.core.datapoints.DoubleDataPoint;
 import org.kairosdb.core.datapoints.DoubleDataPointFactoryImpl;
 import org.kairosdb.core.datapoints.LongDataPoint;
 import org.kairosdb.core.datastore.DataPointGroup;
+import org.kairosdb.core.datastore.Order;
 import org.kairosdb.testing.ListDataPointGroup;
 import org.junit.Before;
 import org.junit.Test;
@@ -41,7 +42,7 @@ public class SumAggregatorTest
 	@Test(expected = NullPointerException.class)
 	public void test_nullSet_invalid()
 	{
-		aggregator.aggregate(null);
+		aggregator.aggregate(null, Order.ASC);
 	}
 
 	@Test
@@ -56,7 +57,7 @@ public class SumAggregatorTest
 		group.addDataPoint(new LongDataPoint(2, 5));
 		group.addDataPoint(new LongDataPoint(3, 25));
 
-		DataPointGroup results = aggregator.aggregate(group);
+		DataPointGroup results = aggregator.aggregate(group, Order.ASC);
 
 		assertThat(results.hasNext(), equalTo(true));
 		DataPoint dataPoint = results.next();
@@ -88,7 +89,7 @@ public class SumAggregatorTest
 		group.addDataPoint(new DoubleDataPoint(2, 5.0));
 		group.addDataPoint(new DoubleDataPoint(3, 25.1));
 
-		DataPointGroup results = aggregator.aggregate(group);
+		DataPointGroup results = aggregator.aggregate(group, Order.ASC);
 
 		DataPoint dataPoint = results.next();
 		assertThat(dataPoint.getTimestamp(), equalTo(1L));
@@ -117,7 +118,7 @@ public class SumAggregatorTest
 		group.addDataPoint(new DoubleDataPoint(2, 5.0));
 		group.addDataPoint(new DoubleDataPoint(3, 25.1));
 
-		DataPointGroup results = aggregator.aggregate(group);
+		DataPointGroup results = aggregator.aggregate(group, Order.ASC);
 
 		assertThat(results.hasNext(), equalTo(true));
 		DataPoint dataPoint = results.next();
@@ -142,7 +143,7 @@ public class SumAggregatorTest
 	{
 		ListDataPointGroup group = new ListDataPointGroup("group");
 
-		DataPointGroup results = aggregator.aggregate(group);
+		DataPointGroup results = aggregator.aggregate(group, Order.ASC);
 
 		assertThat(results.hasNext(), equalTo(false));
 	}

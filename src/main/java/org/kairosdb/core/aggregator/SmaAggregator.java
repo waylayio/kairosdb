@@ -30,6 +30,7 @@ import org.kairosdb.core.annotation.FeatureProperty;
 import org.kairosdb.core.annotation.ValidationProperty;
 import org.kairosdb.core.datapoints.DoubleDataPointFactory;
 import org.kairosdb.core.datastore.DataPointGroup;
+import org.kairosdb.core.datastore.Order;
 import org.kairosdb.core.groupby.GroupByResult;
 
 import org.kairosdb.plugin.Aggregator;
@@ -82,7 +83,7 @@ public class SmaAggregator implements Aggregator
 	}
 
 	@Override
-	public DataPointGroup aggregate(DataPointGroup dataPointGroup)
+	public DataPointGroup aggregate(DataPointGroup dataPointGroup, Order order)
 	{
 		checkState(m_size != 0);
 		return new SmaDataPointGroup(dataPointGroup);
@@ -124,13 +125,13 @@ public class SmaAggregator implements Aggregator
 			if(subSet.size()>m_size){
 				subSet.remove(0);
 			}
-			
+
 			double sum = 0;
 			for(int i=0;i<subSet.size();i++){
 				DataPoint dpt = subSet.get(i);
 				sum += dpt.getDoubleValue();
 			}
-			
+
 			dp = m_dataPointFactory.createDataPoint(dp.getTimestamp(), sum / subSet.size());
 
 			//System.out.println(new SimpleDateFormat("MM/dd/yyyy HH:mm").format(dp.getTimestamp())+" "+sum+" "+subSet.size());

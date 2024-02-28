@@ -4,6 +4,7 @@ import org.junit.Test;
 import org.kairosdb.core.DataPoint;
 import org.kairosdb.core.datapoints.LongDataPoint;
 import org.kairosdb.core.datastore.DataPointGroup;
+import org.kairosdb.core.datastore.Order;
 import org.kairosdb.testing.ListDataPointGroup;
 
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -22,7 +23,7 @@ public class TrimAggregatorTest
 
 		TrimAggregator trimAggregator = new TrimAggregator();
 		trimAggregator.setTrim(TrimAggregator.Trim.FIRST);
-		DataPointGroup results = trimAggregator.aggregate(group);
+		DataPointGroup results = trimAggregator.aggregate(group, Order.ASC);
 
 		assertThat(results.hasNext(), equalTo(false));
 	}
@@ -36,7 +37,7 @@ public class TrimAggregatorTest
 
 		TrimAggregator trimAggregator = new TrimAggregator();
 		trimAggregator.setTrim(TrimAggregator.Trim.FIRST);
-		DataPointGroup results = trimAggregator.aggregate(group);
+		DataPointGroup results = trimAggregator.aggregate(group, Order.ASC);
 
 		assertThat(results.hasNext(), equalTo(true));
 		DataPoint dp = results.next();
@@ -57,7 +58,7 @@ public class TrimAggregatorTest
 
 		TrimAggregator trimAggregator = new TrimAggregator();
 		trimAggregator.setTrim(TrimAggregator.Trim.FIRST);
-		DataPointGroup results = trimAggregator.aggregate(group);
+		DataPointGroup results = trimAggregator.aggregate(group, Order.ASC);
 
 		assertThat(results.hasNext(), equalTo(true));
 
@@ -80,7 +81,7 @@ public class TrimAggregatorTest
 
 		TrimAggregator trimAggregator = new TrimAggregator();
 		trimAggregator.setTrim(TrimAggregator.Trim.LAST);
-		DataPointGroup results = trimAggregator.aggregate(group);
+		DataPointGroup results = trimAggregator.aggregate(group, Order.ASC);
 
 		assertThat(results.hasNext(), equalTo(false));
 	}
@@ -94,7 +95,7 @@ public class TrimAggregatorTest
 
 		TrimAggregator trimAggregator = new TrimAggregator();
 		trimAggregator.setTrim(TrimAggregator.Trim.LAST);
-		DataPointGroup results = trimAggregator.aggregate(group);
+		DataPointGroup results = trimAggregator.aggregate(group, Order.ASC);
 
 		assertThat(results.hasNext(), equalTo(true));
 		DataPoint dp = results.next();
@@ -115,7 +116,7 @@ public class TrimAggregatorTest
 
 		TrimAggregator trimAggregator = new TrimAggregator();
 		trimAggregator.setTrim(TrimAggregator.Trim.LAST);
-		DataPointGroup results = trimAggregator.aggregate(group);
+		DataPointGroup results = trimAggregator.aggregate(group, Order.ASC);
 
 		assertThat(results.hasNext(), equalTo(true));
 
@@ -138,7 +139,7 @@ public class TrimAggregatorTest
 
 		TrimAggregator trimAggregator = new TrimAggregator();
 		trimAggregator.setTrim(TrimAggregator.Trim.BOTH);
-		DataPointGroup results = trimAggregator.aggregate(group);
+		DataPointGroup results = trimAggregator.aggregate(group, Order.ASC);
 
 		assertThat(results.hasNext(), equalTo(false));
 	}
@@ -152,7 +153,7 @@ public class TrimAggregatorTest
 
 		TrimAggregator trimAggregator = new TrimAggregator();
 		trimAggregator.setTrim(TrimAggregator.Trim.BOTH);
-		DataPointGroup results = trimAggregator.aggregate(group);
+		DataPointGroup results = trimAggregator.aggregate(group, Order.ASC);
 
 		assertThat(results.hasNext(), equalTo(false));
 	}
@@ -167,7 +168,7 @@ public class TrimAggregatorTest
 
 		TrimAggregator trimAggregator = new TrimAggregator();
 		trimAggregator.setTrim(TrimAggregator.Trim.BOTH);
-		DataPointGroup results = trimAggregator.aggregate(group);
+		DataPointGroup results = trimAggregator.aggregate(group, Order.ASC);
 
 		assertThat(results.hasNext(), equalTo(true));
 

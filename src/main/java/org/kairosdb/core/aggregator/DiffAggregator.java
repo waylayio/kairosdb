@@ -5,6 +5,7 @@ import org.kairosdb.core.DataPoint;
 import org.kairosdb.core.annotation.FeatureComponent;
 import org.kairosdb.core.datapoints.DoubleDataPointFactory;
 import org.kairosdb.core.datastore.DataPointGroup;
+import org.kairosdb.core.datastore.Order;
 import org.kairosdb.plugin.Aggregator;
 
 /**
@@ -25,7 +26,7 @@ public class DiffAggregator implements Aggregator
 	}
 
 	@Override
-	public DataPointGroup aggregate(DataPointGroup dataPointGroup)
+	public DataPointGroup aggregate(DataPointGroup dataPointGroup, Order order)
 	{
 		return new DiffDataPointGroup(dataPointGroup);
 	}

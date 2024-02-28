@@ -6,6 +6,7 @@ import org.junit.Test;
 import org.kairosdb.core.DataPoint;
 import org.kairosdb.core.datapoints.LongDataPoint;
 import org.kairosdb.core.datastore.DataPointGroup;
+import org.kairosdb.core.datastore.Order;
 import org.kairosdb.core.exception.DatastoreException;
 import org.kairosdb.core.groupby.TagGroupBy;
 import org.kairosdb.eventbus.FilterEventBus;
@@ -58,7 +59,7 @@ public class SaveAsAggregatorTest
 		group.addDataPoint(new LongDataPoint(1, 10));
 		group.addDataPoint(new LongDataPoint(2, 20));
 
-		DataPointGroup results = m_aggregator.aggregate(group);
+		DataPointGroup results = m_aggregator.aggregate(group, Order.ASC);
 
 		assertThat(results.hasNext(), equalTo(true));
 		DataPoint dataPoint = results.next();
@@ -88,7 +89,7 @@ public class SaveAsAggregatorTest
 		group.addDataPoint(new LongDataPoint(1, 10));
 		group.addDataPoint(new LongDataPoint(2, 20));
 
-		DataPointGroup results = m_aggregator.aggregate(group);
+		DataPointGroup results = m_aggregator.aggregate(group, Order.ASC);
 
 		assertThat(results.hasNext(), equalTo(true));
 		DataPoint dataPoint = results.next();
@@ -123,7 +124,7 @@ public class SaveAsAggregatorTest
 		group.addDataPoint(new LongDataPoint(2, 20));
 		group.addTag("host", "tag_should_not_be_there");
 
-		DataPointGroup results = m_aggregator.aggregate(group);
+		DataPointGroup results = m_aggregator.aggregate(group, Order.ASC);
 
 		assertThat(results.hasNext(), equalTo(true));
 		DataPoint dataPoint = results.next();
@@ -158,7 +159,7 @@ public class SaveAsAggregatorTest
 		group.addDataPoint(new LongDataPoint(2, 20));
 		group.addTag("host", "tag_should_not_be_there");
 
-		DataPointGroup results = m_aggregator.aggregate(group);
+		DataPointGroup results = m_aggregator.aggregate(group, Order.ASC);
 
 		assertThat(results.hasNext(), equalTo(true));
 		DataPoint dataPoint = results.next();
@@ -200,7 +201,7 @@ public class SaveAsAggregatorTest
 		group.addTag("host2", "host2_tag");
 		group.addTag("host2", "wont show up because there are two");
 
-		DataPointGroup results = m_aggregator.aggregate(group);
+		DataPointGroup results = m_aggregator.aggregate(group, Order.ASC);
 
 		assertThat(results.hasNext(), equalTo(true));
 		DataPoint dataPoint = results.next();

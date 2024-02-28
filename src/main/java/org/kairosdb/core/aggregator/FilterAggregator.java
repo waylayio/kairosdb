@@ -21,6 +21,7 @@ import org.kairosdb.core.annotation.FeatureComponent;
 import org.kairosdb.core.annotation.FeatureProperty;
 import org.kairosdb.core.datapoints.StringDataPoint;
 import org.kairosdb.core.datastore.DataPointGroup;
+import org.kairosdb.core.datastore.Order;
 import org.kairosdb.plugin.Aggregator;
 
 
@@ -142,7 +143,7 @@ public class FilterAggregator implements Aggregator
 		m_threshold = threshold;
 	}
 
-	public DataPointGroup aggregate(DataPointGroup dataPointGroup)
+	public DataPointGroup aggregate(DataPointGroup dataPointGroup, Order order)
 	{
 		return new FilterDataPointAggregator(dataPointGroup);
 	}

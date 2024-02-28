@@ -21,6 +21,7 @@ import org.kairosdb.core.DataPoint;
 import org.kairosdb.core.datapoints.DoubleDataPointFactoryImpl;
 import org.kairosdb.core.datapoints.LongDataPoint;
 import org.kairosdb.core.datastore.DataPointGroup;
+import org.kairosdb.core.datastore.Order;
 import org.kairosdb.testing.ListDataPointGroup;
 
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -31,7 +32,7 @@ public class RateAggregatorTest
 	@Test(expected = NullPointerException.class)
 	public void test_nullSet_invalid()
 	{
-		new RateAggregator(new DoubleDataPointFactoryImpl()).aggregate(null);
+		new RateAggregator(new DoubleDataPointFactoryImpl()).aggregate(null, Order.ASC);
 	}
 
 	@Test
@@ -44,7 +45,7 @@ public class RateAggregatorTest
 		group.addDataPoint(new LongDataPoint(4, 40));
 
 		RateAggregator rateAggregator = new RateAggregator(new DoubleDataPointFactoryImpl());
-		DataPointGroup results = rateAggregator.aggregate(group);
+		DataPointGroup results = rateAggregator.aggregate(group, Order.ASC);
 
 		DataPoint dp = results.next();
 		assertThat(dp.getTimestamp(), equalTo(2L));
@@ -69,7 +70,7 @@ public class RateAggregatorTest
 		group.addDataPoint(new LongDataPoint(7, 40));
 
 		RateAggregator rateAggregator = new RateAggregator(new DoubleDataPointFactoryImpl());
-		DataPointGroup results = rateAggregator.aggregate(group);
+		DataPointGroup results = rateAggregator.aggregate(group, Order.ASC);
 
 		DataPoint dp = results.next();
 		assertThat(dp.getTimestamp(), equalTo(3L));
@@ -94,7 +95,7 @@ public class RateAggregatorTest
 		group.addDataPoint(new LongDataPoint(4, 20));
 
 		RateAggregator rateAggregator = new RateAggregator(new DoubleDataPointFactoryImpl());
-		DataPointGroup results = rateAggregator.aggregate(group);
+		DataPointGroup results = rateAggregator.aggregate(group, Order.ASC);
 
 		DataPoint dp = results.next();
 		assertThat(dp.getTimestamp(), equalTo(2L));
@@ -122,7 +123,7 @@ public class RateAggregatorTest
 
 
 		RateAggregator rateAggregator = new RateAggregator(new DoubleDataPointFactoryImpl());
-		DataPointGroup results = rateAggregator.aggregate(group);
+		DataPointGroup results = rateAggregator.aggregate(group, Order.ASC);
 
 		DataPoint dp = results.next();
 	}

@@ -22,6 +22,7 @@ import org.kairosdb.core.datapoints.DoubleDataPoint;
 import org.kairosdb.core.datapoints.DoubleDataPointFactoryImpl;
 import org.kairosdb.core.datapoints.LongDataPoint;
 import org.kairosdb.core.datastore.DataPointGroup;
+import org.kairosdb.core.datastore.Order;
 import org.kairosdb.testing.ListDataPointGroup;
 
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -41,7 +42,7 @@ public class ScaleAggregatorTest
     @Test(expected = NullPointerException.class)
     public void test_nullSet_invalid()
     {
-        aggregator.aggregate(null);
+        aggregator.aggregate(null, Order.ASC);
     }
 
     @Test
@@ -55,7 +56,7 @@ public class ScaleAggregatorTest
 
         aggregator.setFactor(2.5);
 
-        DataPointGroup results = aggregator.aggregate(group);
+        DataPointGroup results = aggregator.aggregate(group, Order.ASC);
 
         DataPoint dataPoint = results.next();
         assertThat(dataPoint.getTimestamp(), equalTo(1L));
@@ -85,7 +86,7 @@ public class ScaleAggregatorTest
         group.addDataPoint(new DoubleDataPoint(2, 3.2));
 
         aggregator.setFactor(1.5);
-        DataPointGroup results = aggregator.aggregate(group);
+        DataPointGroup results = aggregator.aggregate(group, Order.ASC);
 
         DataPoint dataPoint = results.next();
         assertThat(dataPoint.getTimestamp(), equalTo(1L));
@@ -111,7 +112,7 @@ public class ScaleAggregatorTest
 
         aggregator.setFactor(0.5);
 
-        DataPointGroup results = aggregator.aggregate(group);
+        DataPointGroup results = aggregator.aggregate(group, Order.ASC);
 
         DataPoint dataPoint = results.next();
         assertThat(dataPoint.getTimestamp(), equalTo(1L));

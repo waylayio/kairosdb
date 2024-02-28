@@ -1,6 +1,7 @@
 package org.kairosdb.core.aggregator;
 
 import org.kairosdb.core.datastore.DataPointGroup;
+import org.kairosdb.core.datastore.Order;
 import org.kairosdb.plugin.Aggregator;
 
 /**
@@ -16,7 +17,7 @@ public class DropAggregator implements Aggregator
 
 
 	@Override
-	public DataPointGroup aggregate(DataPointGroup dataPointGroup)
+	public DataPointGroup aggregate(DataPointGroup dataPointGroup, Order order)
 	{
 		return null;
 	}

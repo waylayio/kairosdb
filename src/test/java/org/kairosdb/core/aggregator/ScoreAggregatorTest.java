@@ -36,13 +36,13 @@ public class ScoreAggregatorTest
     @Test(expected = NullPointerException.class)
     public void test_aggregate_nullSet()
     {
-        aggregator.aggregate(null);
+        aggregator.aggregate(null, org.kairosdb.core.datastore.Order.ASC);
     }
 
     @Test
     public void test_aggregate_emptySet()
     {
-        DataPointGroup results = aggregator.aggregate(new EmptyDataPointGroup("Test.Metric", new TagSetImpl()));
+        DataPointGroup results = aggregator.aggregate(new EmptyDataPointGroup("Test.Metric", new TagSetImpl()), org.kairosdb.core.datastore.Order.ASC);
 
         assertFalse(results.hasNext());
     }
@@ -77,7 +77,7 @@ public class ScoreAggregatorTest
         group.addDataPoint(new DoubleDataPoint(1, 1));
         group.addDataPoint(new DoubleDataPoint(2, 11));
 
-        DataPointGroup results = aggregator.aggregate(group);
+        DataPointGroup results = aggregator.aggregate(group, org.kairosdb.core.datastore.Order.ASC);
 
         DataPoint dataPoint = results.next();
         assertThat(dataPoint.getTimestamp(), equalTo(0L));
@@ -107,7 +107,7 @@ public class ScoreAggregatorTest
         group.addDataPoint(new DoubleDataPoint(1, 1));
         group.addDataPoint(new DoubleDataPoint(2, 11));
 
-        DataPointGroup results = aggregator.aggregate(group);
+        DataPointGroup results = aggregator.aggregate(group, org.kairosdb.core.datastore.Order.ASC);
 
         DataPoint dataPoint = results.next();
         assertThat(dataPoint.getTimestamp(), equalTo(0L));
@@ -135,7 +135,7 @@ public class ScoreAggregatorTest
         ListDataPointGroup group = new ListDataPointGroup("foo");
         group.addDataPoint(new DoubleDataPoint(0, 0));
 
-        DataPointGroup results = aggregator.aggregate(group);
+        DataPointGroup results = aggregator.aggregate(group, org.kairosdb.core.datastore.Order.ASC);
 
         DataPoint dataPoint = results.next();
         assertThat(dataPoint.getTimestamp(), equalTo(0L));
@@ -147,7 +147,7 @@ public class ScoreAggregatorTest
         group = new ListDataPointGroup("foo");
         group.addDataPoint(new DoubleDataPoint(0, 0));
 
-        results = aggregator.aggregate(group);
+        results = aggregator.aggregate(group, org.kairosdb.core.datastore.Order.ASC);
 
         dataPoint = results.next();
         assertThat(dataPoint.getTimestamp(), equalTo(0L));
@@ -167,7 +167,7 @@ public class ScoreAggregatorTest
         ListDataPointGroup group = new ListDataPointGroup("foo");
         group.addDataPoint(new DoubleDataPoint(0, 0));
 
-        DataPointGroup results = aggregator.aggregate(group);
+        DataPointGroup results = aggregator.aggregate(group, org.kairosdb.core.datastore.Order.ASC);
 
         DataPoint dataPoint = results.next();
         assertThat(dataPoint.getTimestamp(), equalTo(0L));
@@ -179,7 +179,7 @@ public class ScoreAggregatorTest
         group = new ListDataPointGroup("foo");
         group.addDataPoint(new DoubleDataPoint(0, 0));
 
-        results = aggregator.aggregate(group);
+        results = aggregator.aggregate(group, org.kairosdb.core.datastore.Order.ASC);
 
         dataPoint = results.next();
         assertThat(dataPoint.getTimestamp(), equalTo(0L));

@@ -16,10 +16,11 @@
 package org.kairosdb.plugin;
 
 import org.kairosdb.core.datastore.DataPointGroup;
+import org.kairosdb.core.datastore.Order;
 
 public interface Aggregator
 {
-	DataPointGroup aggregate(DataPointGroup dataPointGroup);
+	DataPointGroup aggregate(DataPointGroup dataPointGroup, Order order);
 	boolean canAggregate(String groupType);
 	String getAggregatedGroupType(String groupType);
 
