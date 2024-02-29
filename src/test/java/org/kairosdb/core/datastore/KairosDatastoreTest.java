@@ -77,6 +77,12 @@ public class KairosDatastoreTest
 		((RangeAggregator)agg).setAlignSampling(false);
 		((RangeAggregator)agg).init();
 		metric.addAggregator(agg);
+
+		Aggregator agg2 = aggFactory.createFeatureProcessor("gaps");
+		((RangeAggregator)agg2).setAlignStartTime(true);
+		((RangeAggregator)agg2).setAlignSampling(false);
+		((RangeAggregator)agg2).init();
+		metric.addAggregator(agg2);
 		metric.setOrder(Order.ASC);
 
 		DatastoreQuery dq = datastore.createQuery(metric);
@@ -85,6 +91,9 @@ public class KairosDatastoreTest
 		DataPointGroup group = results.get(0);
 
 		DataPoint dataPoint = group.next();
+		assertThat(dataPoint.getTimestamp(), equalTo(0L));
+
+		dataPoint = group.next();
 		assertThat(dataPoint.getTimestamp(), equalTo(1L));
 		assertThat(dataPoint.getLongValue(), equalTo(72L));
 
@@ -114,7 +123,16 @@ public class KairosDatastoreTest
 
 		((RangeAggregator)agg).setSampling(new Sampling(1, TimeUnit.SECONDS));
 		((RangeAggregator)agg).init();
+
+		Aggregator agg2 = aggFactory.createFeatureProcessor("gaps");
+		((RangeAggregator)agg2).setAlignStartTime(true);
+		((RangeAggregator)agg2).setAlignSampling(false);
+		((RangeAggregator)agg2).setSampling(new Sampling(1, TimeUnit.SECONDS));
+
+		((RangeAggregator)agg2).init();
 		metric.addAggregator(agg);
+		metric.addAggregator(agg2);
+
 		metric.setOrder(Order.DESC);
 
 		DatastoreQuery dq = datastore.createQuery(metric);
