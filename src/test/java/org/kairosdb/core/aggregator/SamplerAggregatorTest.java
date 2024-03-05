@@ -61,6 +61,31 @@ public class SamplerAggregatorTest
     }
 
     @Test
+    public void test_steadyRate_descending()
+    {
+        ListDataPointGroup group = new ListDataPointGroup("rate");
+        group.addDataPoint(new LongDataPoint(4, 40));
+        group.addDataPoint(new LongDataPoint(3, 30));
+        group.addDataPoint(new LongDataPoint(2, 20));
+        group.addDataPoint(new LongDataPoint(1, 10));
+
+        SamplerAggregator samplerAggregator = new SamplerAggregator(new DoubleDataPointFactoryImpl());
+        DataPointGroup results = samplerAggregator.aggregate(group, Order.DESC);
+
+        DataPoint dp = results.next();
+        assertThat(dp.getTimestamp(), equalTo(3L));
+        assertThat(dp.getDoubleValue(), equalTo(40.0));
+
+        dp = results.next();
+        assertThat(dp.getTimestamp(), equalTo(2L));
+        assertThat(dp.getDoubleValue(), equalTo(30.0));
+
+        dp = results.next();
+        assertThat(dp.getTimestamp(), equalTo(1L));
+        assertThat(dp.getDoubleValue(), equalTo(20.0));
+    }
+
+    @Test
     public void test_changingRate()
     {
         ListDataPointGroup group = new ListDataPointGroup("rate");

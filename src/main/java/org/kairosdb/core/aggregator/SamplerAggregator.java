@@ -55,7 +55,7 @@ public class SamplerAggregator implements Aggregator, TimezoneAware
 
 	public DataPointGroup aggregate(DataPointGroup dataPointGroup, Order order)
 	{
-		return (new SamplerDataPointAggregator(dataPointGroup));
+		return (new SamplerDataPointAggregator(dataPointGroup, order));
 	}
 
 	@Override
@@ -90,9 +90,11 @@ public class SamplerAggregator implements Aggregator, TimezoneAware
 
 	private class SamplerDataPointAggregator extends AggregatedDataPointGroupWrapper
 	{
-		SamplerDataPointAggregator(DataPointGroup innerDataPointGroup)
+		private Order m_order;
+		SamplerDataPointAggregator(DataPointGroup innerDataPointGroup, Order order)
 		{
 			super(innerDataPointGroup);
+			m_order = order;
 		}
 
 		@Override
@@ -111,6 +113,8 @@ public class SamplerAggregator implements Aggregator, TimezoneAware
 			//This defaults the rate to 0 if no more data points exists
 			double x1 = 0;
 			long y1 = y0 + 1;
+			if(m_order == Order.DESC)
+				y1= y0 - 1;
 
 			if (hasNextInternal())
 			{
@@ -127,6 +131,8 @@ public class SamplerAggregator implements Aggregator, TimezoneAware
 				}
 			}
 			double rate = x1 / (y1 - y0) * Util.getSamplingDuration(y0, m_sampling, m_timeZone);
+			if(m_order == Order.DESC)
+				rate = x0 / (y0 - y1) * Util.getSamplingDuration(y1, m_sampling, m_timeZone);
 
 			return (m_dataPointFactory.createDataPoint(y1, rate));
 		}

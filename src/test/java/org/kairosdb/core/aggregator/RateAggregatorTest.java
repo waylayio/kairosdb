@@ -61,6 +61,32 @@ public class RateAggregatorTest
 	}
 
 	@Test
+	public void test_steadyRate_descending()
+	{
+		ListDataPointGroup group = new ListDataPointGroup("rate");
+		group.addDataPoint(new LongDataPoint(4, 40));
+		group.addDataPoint(new LongDataPoint(3, 30));
+		group.addDataPoint(new LongDataPoint(2, 20));
+		group.addDataPoint(new LongDataPoint(1, 10));
+
+		RateAggregator rateAggregator = new RateAggregator(new DoubleDataPointFactoryImpl());
+		DataPointGroup results = rateAggregator.aggregate(group, Order.DESC);
+
+		DataPoint dp = results.next();
+		assertThat(dp.getTimestamp(), equalTo(3L));
+		assertThat(dp.getDoubleValue(), equalTo(10.0));
+
+		dp = results.next();
+		assertThat(dp.getTimestamp(), equalTo(2L));
+		assertThat(dp.getDoubleValue(), equalTo(10.0));
+
+		dp = results.next();
+		assertThat(dp.getTimestamp(), equalTo(1L));
+		assertThat(dp.getDoubleValue(), equalTo(10.0));
+	}
+
+
+	@Test
 	public void test_steadyRateOver2Sec()
 	{
 		ListDataPointGroup group = new ListDataPointGroup("rate");
