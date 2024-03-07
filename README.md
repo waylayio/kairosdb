@@ -23,9 +23,11 @@ Join the [KairosDB discussion group](https://groups.google.com/forum/#!forum/kai
 
 ## Building and releasing WAYLAY branch
 
-The Waylay branch is built using maven.
+The Waylay branch is built using maven. For 1.3.0.x versions do checkoud of `1.3.0-waylay` branch before release:
 
-Note that the version number includes a patch number (e.g. the "+2" in 1.2.1-waylay+2). This patch number
+    $ git checkout 1.3.0-waylay
+
+Note that the version number includes a patch number (e.g. the "+3" in 1.3.0-waylay+1). This patch number
 should be incremented on each release (and the base KairosDB version should remain unchanged).
 
 To run tests using a local Cassandra installation, run
@@ -40,7 +42,7 @@ Running `mvn deploy` will push the artifacts, including the distributable .tar.g
 
 Releases can be performed with the following command (TODO:make sure that the release pushes the artifacts to nexus):
 
-    mvn clean -DskipTests -Darguments=-DskipTests -Dmaven.javadoc.skip=true  release:perform
+    mvn clean -DskipTests -Darguments=-DskipTests -Dmaven.javadoc.skip=true  release:clean release:prepare release:perform
 
 Note that the `build` directory which is created by a number of tests doesn't always get cleaned up properly by
 the tests. This means that it may be necessary to do a `rm -rf build` between builds of this repo.
