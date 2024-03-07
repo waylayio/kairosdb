@@ -5,6 +5,7 @@ import org.kairosdb.core.DataPoint;
 import org.kairosdb.core.datapoints.DoubleDataPointFactoryImpl;
 import org.kairosdb.core.datapoints.LongDataPoint;
 import org.kairosdb.core.datastore.DataPointGroup;
+import org.kairosdb.core.datastore.Order;
 import org.kairosdb.testing.ListDataPointGroup;
 
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -18,7 +19,7 @@ public class DiffAggregatorTest
 	@Test(expected = NullPointerException.class)
 	public void test_nullSet_invalid()
 	{
-		new DiffAggregator(new DoubleDataPointFactoryImpl()).aggregate(null);
+		new DiffAggregator(new DoubleDataPointFactoryImpl()).aggregate(null, Order.ASC);
 	}
 
 	@Test
@@ -31,7 +32,7 @@ public class DiffAggregatorTest
 		group.addDataPoint(new LongDataPoint(4, 40));
 
 		DiffAggregator DiffAggregator = new DiffAggregator(new DoubleDataPointFactoryImpl());
-		DataPointGroup results = DiffAggregator.aggregate(group);
+		DataPointGroup results = DiffAggregator.aggregate(group, Order.ASC);
 
 		DataPoint dp = results.next();
 		assertThat(dp.getTimestamp(), equalTo(2L));
@@ -58,7 +59,7 @@ public class DiffAggregatorTest
 		group.addDataPoint(new LongDataPoint(4, 20));
 
 		DiffAggregator DiffAggregator = new DiffAggregator(new DoubleDataPointFactoryImpl());
-		DataPointGroup results = DiffAggregator.aggregate(group);
+		DataPointGroup results = DiffAggregator.aggregate(group, Order.ASC);
 
 		DataPoint dp = results.next();
 		assertThat(dp.getTimestamp(), equalTo(2L));
@@ -86,7 +87,7 @@ public class DiffAggregatorTest
 		group.addDataPoint(new LongDataPoint(7, 40));
 
 		DiffAggregator rateAggregator = new DiffAggregator(new DoubleDataPointFactoryImpl());
-		DataPointGroup results = rateAggregator.aggregate(group);
+		DataPointGroup results = rateAggregator.aggregate(group, Order.ASC);
 
 		DataPoint dp = results.next();
 		assertThat(dp.getTimestamp(), equalTo(3L));
@@ -116,7 +117,7 @@ public class DiffAggregatorTest
 
 
 		DiffAggregator DiffAggregator = new DiffAggregator(new DoubleDataPointFactoryImpl());
-		DataPointGroup results = DiffAggregator.aggregate(group);
+		DataPointGroup results = DiffAggregator.aggregate(group, Order.ASC);
 
 		assertThat(results.hasNext(), equalTo(true));
 		DataPoint dp = results.next();

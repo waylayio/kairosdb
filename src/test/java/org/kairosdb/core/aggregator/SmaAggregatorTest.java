@@ -27,11 +27,11 @@ import org.kairosdb.core.datapoints.DoubleDataPoint;
 import org.kairosdb.core.datapoints.DoubleDataPointFactoryImpl;
 import org.kairosdb.core.datapoints.LongDataPoint;
 import org.kairosdb.core.datastore.DataPointGroup;
+import org.kairosdb.core.datastore.Order;
 import org.kairosdb.core.exception.KairosDBException;
 import org.kairosdb.testing.ListDataPointGroup;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.hamcrest.number.IsCloseTo.closeTo;
 
 public class SmaAggregatorTest
 {
@@ -47,7 +47,7 @@ public class SmaAggregatorTest
 	public void test_nullSet_invalid()
 	{
 		aggregator.setSize(3);
-		aggregator.aggregate(null);
+		aggregator.aggregate(null, Order.ASC);
 	}
 
 	@Test
@@ -62,7 +62,7 @@ public class SmaAggregatorTest
 		group.addDataPoint(new LongDataPoint(3, 6));
 
 		aggregator.setSize(3);
-		DataPointGroup results = aggregator.aggregate(group);
+		DataPointGroup results = aggregator.aggregate(group, Order.ASC);
 
 		DataPoint dataPoint = results.next();
 		assertThat(dataPoint.getTimestamp()).isEqualTo(1L);
@@ -79,7 +79,7 @@ public class SmaAggregatorTest
 		dataPoint = results.next();
 		assertThat(dataPoint.getTimestamp()).isEqualTo(3L);
 		assertThat(dataPoint.getLongValue()).isEqualTo(4L);
-		
+
 		assertThat(results.hasNext()).isEqualTo(false);
 	}
 
@@ -95,7 +95,7 @@ public class SmaAggregatorTest
 		group.addDataPoint(new DoubleDataPoint(3, 6.0));
 
 		aggregator.setSize(3);
-		DataPointGroup results = aggregator.aggregate(group);
+		DataPointGroup results = aggregator.aggregate(group, Order.ASC);
 
 		DataPoint dataPoint = results.next();
 		assertThat(dataPoint.getTimestamp()).isEqualTo(1L);
@@ -112,7 +112,7 @@ public class SmaAggregatorTest
 		dataPoint = results.next();
 		assertThat(dataPoint.getTimestamp()).isEqualTo(3L);
 		assertThat(dataPoint.getDoubleValue()).isCloseTo(4.067, Offset.offset(2.0));
-		
+
 		assertThat(results.hasNext()).isEqualTo(false);
 	}
 
@@ -128,7 +128,7 @@ public class SmaAggregatorTest
 		group.addDataPoint(new DoubleDataPoint(3, 6.0));
 
 		aggregator.setSize(3);
-		DataPointGroup results = aggregator.aggregate(group);
+		DataPointGroup results = aggregator.aggregate(group, Order.ASC);
 
 		DataPoint dataPoint = results.next();
 		assertThat(dataPoint.getTimestamp()).isEqualTo(1L);
@@ -137,7 +137,7 @@ public class SmaAggregatorTest
 		dataPoint = results.next();
 		assertThat(dataPoint.getTimestamp()).isEqualTo(2L);
 		assertThat(dataPoint.getDoubleValue()).isEqualTo(8.1);
-		
+
 		dataPoint = results.next();
 		assertThat(dataPoint.getTimestamp()).isEqualTo(2L);
 		assertThat(dataPoint.getDoubleValue()).isCloseTo(3.067, Offset.offset(2.0));

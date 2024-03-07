@@ -23,6 +23,7 @@ import org.kairosdb.core.datapoints.DoubleDataPointFactoryImpl;
 import org.kairosdb.core.datapoints.LegacyLongDataPoint;
 import org.kairosdb.core.datapoints.LongDataPoint;
 import org.kairosdb.core.datastore.DataPointGroup;
+import org.kairosdb.core.datastore.Order;
 import org.kairosdb.core.exception.KairosDBException;
 import org.kairosdb.testing.ListDataPointGroup;
 
@@ -44,7 +45,7 @@ public class AvgAggregatorTest
 	@Test(expected = NullPointerException.class)
 	public void test_nullSet_invalid()
 	{
-		aggregator.aggregate(null);
+		aggregator.aggregate(null, Order.ASC);
 	}
 
 	@Test
@@ -59,7 +60,7 @@ public class AvgAggregatorTest
 		group.addDataPoint(new LongDataPoint(2, 5));
 		group.addDataPoint(new LongDataPoint(3, 25));
 
-		DataPointGroup results = aggregator.aggregate(group);
+		DataPointGroup results = aggregator.aggregate(group, Order.ASC);
 
 		DataPoint dataPoint = results.next();
 		assertThat(dataPoint.getTimestamp(), equalTo(1L));
@@ -88,7 +89,7 @@ public class AvgAggregatorTest
 		group.addDataPoint(new DoubleDataPoint(2, 5.0));
 		group.addDataPoint(new DoubleDataPoint(3, 25.1));
 
-		DataPointGroup results = aggregator.aggregate(group);
+		DataPointGroup results = aggregator.aggregate(group, Order.ASC);
 
 		DataPoint dataPoint = results.next();
 		assertThat(dataPoint.getTimestamp(), equalTo(1L));
@@ -117,7 +118,7 @@ public class AvgAggregatorTest
 		group.addDataPoint(new DoubleDataPoint(2, 5.0));
 		group.addDataPoint(new DoubleDataPoint(3, 25.1));
 
-		DataPointGroup results = aggregator.aggregate(group);
+		DataPointGroup results = aggregator.aggregate(group, Order.ASC);
 
 		DataPoint dataPoint = results.next();
 		assertThat(dataPoint.getTimestamp(), equalTo(1L));
@@ -146,7 +147,7 @@ public class AvgAggregatorTest
 		group.addDataPoint(new LegacyLongDataPoint(1, 5));
 		group.addDataPoint(new LegacyLongDataPoint(1, 25));
 
-		DataPointGroup results = aggregator.aggregate(group);
+		DataPointGroup results = aggregator.aggregate(group, Order.ASC);
 
 		DataPoint dataPoint = results.next();
 		assertThat(dataPoint.getTimestamp(), equalTo(1L));

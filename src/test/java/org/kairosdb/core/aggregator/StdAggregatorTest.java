@@ -19,6 +19,7 @@ import org.kairosdb.core.DataPoint;
 import org.kairosdb.core.datapoints.DoubleDataPointFactoryImpl;
 import org.kairosdb.core.datapoints.LongDataPoint;
 import org.kairosdb.core.datastore.DataPointGroup;
+import org.kairosdb.core.datastore.Order;
 import org.kairosdb.testing.ListDataPointGroup;
 import org.junit.Test;
 
@@ -42,7 +43,7 @@ public class StdAggregatorTest
 		StdAggregator aggregator = new StdAggregator(new DoubleDataPointFactoryImpl());
 		aggregator.init();
 
-		DataPointGroup dataPointGroup = aggregator.aggregate(group);
+		DataPointGroup dataPointGroup = aggregator.aggregate(group, Order.ASC);
 
 		DataPoint stdev = dataPointGroup.next();
 		assertThat(stdev.getDoubleValue(), closeTo(2886.462, 0.44));
@@ -66,7 +67,7 @@ public class StdAggregatorTest
 		StdAggregator aggregator = new StdAggregator(new DoubleDataPointFactoryImpl());
 		aggregator.init();
 
-		DataPointGroup dataPointGroup = aggregator.aggregate(group);
+		DataPointGroup dataPointGroup = aggregator.aggregate(group, Order.ASC);
 
 		DataPoint stdev = dataPointGroup.next();
 		double expected = naiveStdDev(values);

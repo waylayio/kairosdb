@@ -23,6 +23,7 @@ import org.kairosdb.core.annotation.FeatureComponent;
 import org.kairosdb.core.annotation.FeatureCompoundProperty;
 import org.kairosdb.core.datapoints.DoubleDataPointFactory;
 import org.kairosdb.core.datastore.DataPointGroup;
+import org.kairosdb.core.datastore.Order;
 import org.kairosdb.core.datastore.TimeUnit;
 import org.kairosdb.plugin.Aggregator;
 import org.kairosdb.util.Util;
@@ -67,7 +68,7 @@ public class RateAggregator implements Aggregator, TimezoneAware
 
 	}
 
-	public DataPointGroup aggregate(DataPointGroup dataPointGroup)
+	public DataPointGroup aggregate(DataPointGroup dataPointGroup, Order order)
 	{
 		return (new RateDataPointAggregator(dataPointGroup));
 	}
@@ -128,7 +129,7 @@ public class RateAggregator implements Aggregator, TimezoneAware
 				}
 			}
 
-			double rate = (x1 - x0) / (y1 - y0) * Util.getSamplingDuration(y0, m_sampling, m_timeZone);
+			double rate = (x1 - x0) / Math.abs(y1 - y0) * Util.getSamplingDuration(y0, m_sampling, m_timeZone);
 
 			return (m_dataPointFactory.createDataPoint(y1, rate));
 		}

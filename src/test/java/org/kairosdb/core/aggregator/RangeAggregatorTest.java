@@ -13,8 +13,11 @@ import org.kairosdb.core.DataPoint;
 import org.kairosdb.core.datapoints.DoubleDataPointFactoryImpl;
 import org.kairosdb.core.datapoints.LongDataPoint;
 import org.kairosdb.core.datastore.DataPointGroup;
+import org.kairosdb.core.datastore.Order;
 import org.kairosdb.core.datastore.TimeUnit;
 import org.kairosdb.testing.ListDataPointGroup;
+
+import java.util.ArrayList;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
@@ -31,8 +34,8 @@ public class RangeAggregatorTest
 
 		DateTime startDate = new DateTime(2014, 1, 1, 0, 0, utc);
 		for (DateTime date = startDate;
-		     date.isBefore(new DateTime(2015, 6, 2, 0, 0, utc));
-		     date = date.plusMonths(1))
+			 date.isBefore(new DateTime(2015, 6, 2, 0, 0, utc));
+			 date = date.plusMonths(1))
 		{
 			dpGroup.addDataPoint(new LongDataPoint(date.getMillis(), 1));
 		}
@@ -43,7 +46,7 @@ public class RangeAggregatorTest
 		agg.setStartTime(startDate.getMillis());
 		agg.init();
 
-		DataPointGroup aggregated = agg.aggregate(dpGroup);
+		DataPointGroup aggregated = agg.aggregate(dpGroup, Order.ASC);
 
 		assertThat(aggregated.hasNext(), is(true));
 		assertThat(aggregated.next().getLongValue(), is(12L));
@@ -63,8 +66,8 @@ public class RangeAggregatorTest
 		DateTime startDate = new DateTime(2014, 1, 1, 1, 1, utc); // LEAP year
 		DateTime stopDate = new DateTime(2014, 7, 10, 1, 1, utc);
 		for (DateTime iterationDT = startDate;
-		     iterationDT.isBefore(stopDate);
-		     iterationDT = iterationDT.plusDays(1))
+			 iterationDT.isBefore(stopDate);
+			 iterationDT = iterationDT.plusDays(1))
 		{
 			dpGroup.addDataPoint(new LongDataPoint(iterationDT.getMillis(), 1));
 		}
@@ -75,7 +78,7 @@ public class RangeAggregatorTest
 		agg.setStartTime(startDate.getMillis());
 		agg.init();
 
-		DataPointGroup dpg = agg.aggregate(dpGroup);
+		DataPointGroup dpg = agg.aggregate(dpGroup, Order.ASC);
 
 		assertThat(dpg.hasNext(), is(true));
 		DataPoint next = dpg.next();
@@ -104,8 +107,8 @@ public class RangeAggregatorTest
 		DateTime startDate = new DateTime(2014, 1, 1, 1, 1, utc); // LEAP year
 		DateTime stopDate = new DateTime(2014, 7, 10, 1, 1, utc);
 		for (DateTime iterationDT = startDate;
-		     iterationDT.isBefore(stopDate);
-		     iterationDT = iterationDT.plusDays(5))
+			 iterationDT.isBefore(stopDate);
+			 iterationDT = iterationDT.plusDays(5))
 		{
 			dpGroup.addDataPoint(new LongDataPoint(iterationDT.getMillis(), 1));
 		}
@@ -118,7 +121,7 @@ public class RangeAggregatorTest
 		agg.setStartTime(startDate.getMillis());
 		agg.init();
 
-		DataPointGroup dpg = agg.aggregate(dpGroup);
+		DataPointGroup dpg = agg.aggregate(dpGroup, Order.ASC);
 
 		assertThat(dpg.hasNext(), is(true));
 		DataPoint next = dpg.next();
@@ -144,8 +147,8 @@ public class RangeAggregatorTest
 		DateTime startDate = new DateTime(2014, 1, 1, 1, 1, utc); // LEAP year
 		DateTime stopDate = new DateTime(2014, 7, 10, 1, 1, utc);
 		for (DateTime iterationDT = startDate;
-		     iterationDT.isBefore(stopDate);
-		     iterationDT = iterationDT.plusDays(5))
+			 iterationDT.isBefore(stopDate);
+			 iterationDT = iterationDT.plusDays(5))
 		{
 			dpGroup.addDataPoint(new LongDataPoint(iterationDT.getMillis(), 1));
 		}
@@ -158,7 +161,7 @@ public class RangeAggregatorTest
 		agg.setStartTime(startDate.getMillis());
 		agg.init();
 
-		DataPointGroup dpg = agg.aggregate(dpGroup);
+		DataPointGroup dpg = agg.aggregate(dpGroup, Order.ASC);
 
 		assertThat(dpg.hasNext(), is(true));
 		DataPoint next = dpg.next();
@@ -184,8 +187,8 @@ public class RangeAggregatorTest
 		DateTime startDate = new DateTime(2014, 3, 10, 0, 0, utc);
 		DateTime stopDate = new DateTime(2014, 5, 23, 0, 0, utc);
 		for (DateTime iterationDT = startDate;
-		     iterationDT.isBefore(stopDate);
-		     iterationDT = iterationDT.plusDays(1))
+			 iterationDT.isBefore(stopDate);
+			 iterationDT = iterationDT.plusDays(1))
 		{
 			dpGroup.addDataPoint(new LongDataPoint(iterationDT.getMillis(), 1));
 		}
@@ -196,7 +199,7 @@ public class RangeAggregatorTest
 		aggregator.setStartTime(startDate.getMillis());
 		aggregator.init();
 
-		DataPointGroup aggregated = aggregator.aggregate(dpGroup);
+		DataPointGroup aggregated = aggregator.aggregate(dpGroup, Order.ASC);
 
 		assertThat(aggregated.hasNext(), is(true));
 		DataPoint marchDataPoint = aggregated.next();
@@ -225,8 +228,8 @@ public class RangeAggregatorTest
 		DateTime stopDate = new DateTime(2014, 5, 23, 0, 0, utc);
 		ListDataPointGroup dpGroup = new ListDataPointGroup("range_test");
 		for (DateTime iterationDT = startDate;
-		     iterationDT.isBefore(stopDate);
-		     iterationDT = iterationDT.plusDays(1))
+			 iterationDT.isBefore(stopDate);
+			 iterationDT = iterationDT.plusDays(1))
 		{
 			dpGroup.addDataPoint(new LongDataPoint(iterationDT.getMillis(), 1));
 		}
@@ -238,7 +241,7 @@ public class RangeAggregatorTest
 		aggregator.setStartTime(startDate.getMillis());
 		aggregator.init();
 
-		DataPointGroup aggregated = aggregator.aggregate(dpGroup);
+		DataPointGroup aggregated = aggregator.aggregate(dpGroup, Order.ASC);
 
 		assertThat(aggregated.hasNext(), is(true));
 		DateTime marchFirst = new DateTime(2014, 3, 1, 0, 0, utc);
@@ -270,8 +273,8 @@ public class RangeAggregatorTest
 		DateTime stopDate = new DateTime(2014, 5, 23, 0, 0, utc);
 		ListDataPointGroup dpGroup = new ListDataPointGroup("range_test");
 		for (DateTime iterationDT = startDate;
-		     iterationDT.isBefore(stopDate);
-		     iterationDT = iterationDT.plusDays(1))
+			 iterationDT.isBefore(stopDate);
+			 iterationDT = iterationDT.plusDays(1))
 		{
 			dpGroup.addDataPoint(new LongDataPoint(iterationDT.getMillis(), 1));
 		}
@@ -283,7 +286,7 @@ public class RangeAggregatorTest
 		aggregator.setStartTime(startDate.getMillis());
 		aggregator.init();
 
-		DataPointGroup aggregated = aggregator.aggregate(dpGroup);
+		DataPointGroup aggregated = aggregator.aggregate(dpGroup, Order.ASC);
 
 		assertThat(aggregated.hasNext(), is(true));
 		DateTime marchFirst = new DateTime(2014, 4, 1, 0, 0, utc);
@@ -315,8 +318,8 @@ public class RangeAggregatorTest
 
 		ListDataPointGroup dpGroup = new ListDataPointGroup("range_test");
 		for (DateTime iterationDT = startDate;
-		     iterationDT.isBefore(endDate);
-		     iterationDT = iterationDT.plusDays(1))
+			 iterationDT.isBefore(endDate);
+			 iterationDT = iterationDT.plusDays(1))
 		{
 			dpGroup.addDataPoint(new LongDataPoint(iterationDT.getMillis(), 1));
 		}
@@ -328,7 +331,7 @@ public class RangeAggregatorTest
 		aggregator.setStartTime(startDate.getMillis());
 		aggregator.init();
 
-		DataPointGroup aggregated = aggregator.aggregate(dpGroup);
+		DataPointGroup aggregated = aggregator.aggregate(dpGroup, Order.ASC);
 
 		assertThat(aggregated.hasNext(), is(true));
 		DateTime firstWeekStart = new DateTime(2014, 12, 29, 0, 0, utc);
@@ -360,8 +363,8 @@ public class RangeAggregatorTest
 
 		ListDataPointGroup dpGroup = new ListDataPointGroup("range_test");
 		for (DateTime iterationDT = startDate;
-		     iterationDT.isBefore(endDate);
-		     iterationDT = iterationDT.plusDays(1))
+			 iterationDT.isBefore(endDate);
+			 iterationDT = iterationDT.plusDays(1))
 		{
 			dpGroup.addDataPoint(new LongDataPoint(iterationDT.getMillis(), 1));
 		}
@@ -373,7 +376,7 @@ public class RangeAggregatorTest
 		aggregator.setStartTime(startDate.getMillis());
 		aggregator.init();
 
-		DataPointGroup aggregated = aggregator.aggregate(dpGroup);
+		DataPointGroup aggregated = aggregator.aggregate(dpGroup, Order.ASC);
 
 		assertThat(aggregated.hasNext(), is(true));
 		DateTime firstWeekStart = new DateTime(2015, 1, 5, 0, 0, utc);
@@ -403,9 +406,9 @@ public class RangeAggregatorTest
 		DateTimeZone paris = DateTimeZone.forID("Europe/Paris");
 
 		for (DateTime hour = new DateTime(2014, 3, 1, 0, 0, paris); // 1st of March
-		     hour.isBefore(new DateTime(2014, 4, 1, 0, 0, paris)); // 1st of April
-		     hour = hour.plusHours(1)
-				)
+			 hour.isBefore(new DateTime(2014, 4, 1, 0, 0, paris)); // 1st of April
+			 hour = hour.plusHours(1)
+		)
 		{
 			group.addDataPoint(new LongDataPoint(hour.getMillis(), 1L));
 		}
@@ -417,7 +420,7 @@ public class RangeAggregatorTest
 		aggregator.setAlignSampling(true);
 		aggregator.init();
 
-		DataPointGroup hourCount = aggregator.aggregate(group);
+		DataPointGroup hourCount = aggregator.aggregate(group, Order.ASC);
 		assert hourCount.hasNext();
 		// 31 * 24 - 1 = 743 hours in March
 		assertThat(hourCount.next().getLongValue(), is(743L));
@@ -431,8 +434,8 @@ public class RangeAggregatorTest
 		DateTimeZone paris = DateTimeZone.forID("Europe/Paris");
 
 		for (DateTime hour = new DateTime(2014, 10, 1, 0, 0, paris); // 1st of October
-		     hour.isBefore(new DateTime(2014, 11, 1, 0, 0, paris)); // 1st of November
-		     hour = hour.plusHours(1))
+			 hour.isBefore(new DateTime(2014, 11, 1, 0, 0, paris)); // 1st of November
+			 hour = hour.plusHours(1))
 		{
 			group.addDataPoint(new LongDataPoint(hour.getMillis(), 1L));
 		}
@@ -444,7 +447,7 @@ public class RangeAggregatorTest
 		aggregator.setAlignSampling(true);
 		aggregator.init();
 
-		DataPointGroup hourCount = aggregator.aggregate(group);
+		DataPointGroup hourCount = aggregator.aggregate(group, Order.ASC);
 		assertThat(hourCount.hasNext(), is(true));
 		// 31 * 24 + 1 = 745 hours in October
 		assertThat(hourCount.next().getLongValue(), is(745L));
@@ -462,8 +465,8 @@ public class RangeAggregatorTest
 
 		ListDataPointGroup dpGroup = new ListDataPointGroup("range_test");
 		for (DateTime iterationDT = startDate;
-		     iterationDT.isBefore(endDate);
-		     iterationDT = iterationDT.plusDays(1))
+			 iterationDT.isBefore(endDate);
+			 iterationDT = iterationDT.plusDays(1))
 		{
 			dpGroup.addDataPoint(new LongDataPoint(iterationDT.getMillis(), 1));
 		}
@@ -473,7 +476,7 @@ public class RangeAggregatorTest
 		aggregator.setAlignSampling(false);
 		aggregator.init();
 
-		DataPointGroup dayCount = aggregator.aggregate(dpGroup);
+		DataPointGroup dayCount = aggregator.aggregate(dpGroup, Order.ASC);
 
 		assertThat(dayCount.hasNext(), is(true));
 		assertThat(dayCount.next().getLongValue(), is(365L)); // 2010
@@ -499,8 +502,8 @@ public class RangeAggregatorTest
 		ListDataPointGroup group = new ListDataPointGroup("aggregationByDay");
 
 		for (DateTime hour = startDate;
-		     hour.isBefore(endDate);
-		     hour = hour.plusHours(1))
+			 hour.isBefore(endDate);
+			 hour = hour.plusHours(1))
 		{
 			group.addDataPoint(new LongDataPoint(hour.getMillis(), 1L));
 		}
@@ -510,7 +513,7 @@ public class RangeAggregatorTest
 		aggregator.setAlignSampling(false);
 		aggregator.init();
 
-		DataPointGroup dayCount = aggregator.aggregate(group);
+		DataPointGroup dayCount = aggregator.aggregate(group, Order.ASC);
 
 		assertThat(dayCount.hasNext(), is(true));
 		assertThat(dayCount.next().getLongValue(), is(24L));
@@ -533,8 +536,8 @@ public class RangeAggregatorTest
 		ListDataPointGroup group = new ListDataPointGroup("aggregationByDay");
 
 		for (DateTime minute = startDate;
-		     minute.isBefore(endDate);
-		     minute = minute.plusMinutes(10))
+			 minute.isBefore(endDate);
+			 minute = minute.plusMinutes(10))
 		{
 			group.addDataPoint(new LongDataPoint(minute.getMillis(), 1L));
 		}
@@ -544,7 +547,7 @@ public class RangeAggregatorTest
 		aggregator.setAlignSampling(false);
 		aggregator.init();
 
-		DataPointGroup dayCount = aggregator.aggregate(group);
+		DataPointGroup dayCount = aggregator.aggregate(group, Order.ASC);
 
 		assertThat(dayCount.hasNext(), is(true));
 		assertThat(dayCount.next().getLongValue(), is(6L));
@@ -567,8 +570,8 @@ public class RangeAggregatorTest
 		ListDataPointGroup group = new ListDataPointGroup("aggregationByDay");
 
 		for (DateTime second = startDate;
-		     second.isBefore(endDate);
-		     second = second.plusSeconds(10))
+			 second.isBefore(endDate);
+			 second = second.plusSeconds(10))
 		{
 			group.addDataPoint(new LongDataPoint(second.getMillis(), 1L));
 		}
@@ -578,7 +581,7 @@ public class RangeAggregatorTest
 		aggregator.setAlignSampling(false);
 		aggregator.init();
 
-		DataPointGroup dayCount = aggregator.aggregate(group);
+		DataPointGroup dayCount = aggregator.aggregate(group, Order.ASC);
 
 		assertThat(dayCount.hasNext(), is(true));
 		assertThat(dayCount.next().getLongValue(), is(6L));
@@ -600,8 +603,8 @@ public class RangeAggregatorTest
 		ListDataPointGroup group = new ListDataPointGroup("aggregationByDay");
 
 		for (DateTime milliSecond = startDate;
-		     milliSecond.isBefore(endDate);
-		     milliSecond = milliSecond.plus(100))
+			 milliSecond.isBefore(endDate);
+			 milliSecond = milliSecond.plus(100))
 		{
 			group.addDataPoint(new LongDataPoint(milliSecond.getMillis(), 1L));
 		}
@@ -611,7 +614,7 @@ public class RangeAggregatorTest
 		aggregator.setAlignSampling(false);
 		aggregator.init();
 
-		DataPointGroup dayCount = aggregator.aggregate(group);
+		DataPointGroup dayCount = aggregator.aggregate(group, Order.ASC);
 
 		assertThat(dayCount.hasNext(), is(true));
 		assertThat(dayCount.next().getLongValue(), is(10L));
@@ -634,8 +637,8 @@ public class RangeAggregatorTest
 		ListDataPointGroup group = new ListDataPointGroup("aggregationByDay");
 
 		for (DateTime milliSecond = startDate;
-		     milliSecond.isBefore(endDate);
-		     milliSecond = milliSecond.plus(1))
+			 milliSecond.isBefore(endDate);
+			 milliSecond = milliSecond.plus(1))
 		{
 			group.addDataPoint(new LongDataPoint(milliSecond.getMillis(), 1L));
 			group.addDataPoint(new LongDataPoint(milliSecond.getMillis(), 1L));
@@ -647,7 +650,7 @@ public class RangeAggregatorTest
 		aggregator.setStartTime(startDate.getMillis());
 		aggregator.init();
 
-		DataPointGroup dayCount = aggregator.aggregate(group);
+		DataPointGroup dayCount = aggregator.aggregate(group, Order.ASC);
 
 		assertThat(dayCount.hasNext(), is(true));
 		DataPoint firstMillis = dayCount.next();
@@ -682,8 +685,8 @@ public class RangeAggregatorTest
 		ListDataPointGroup group = new ListDataPointGroup("aggregationByDay");
 
 		for (DateTime milliSecond = startDate;
-		     milliSecond.isBefore(endDate);
-		     milliSecond = milliSecond.plus(10000))
+			 milliSecond.isBefore(endDate);
+			 milliSecond = milliSecond.plus(10000))
 		{
 			group.addDataPoint(new LongDataPoint(milliSecond.getMillis(), 1L));
 			group.addDataPoint(new LongDataPoint(milliSecond.getMillis(), 1L));
@@ -695,11 +698,52 @@ public class RangeAggregatorTest
 		aggregator.setStartTime(startDate.getMillis());
 		aggregator.init();
 
-		DataPointGroup dpg = aggregator.aggregate(group);
+		DataPointGroup dpg = aggregator.aggregate(group, Order.ASC);
 
 		while (dpg.hasNext())
 			dpg.next();
 
 
 	}
+
+	@Test
+	public void test_aggregationByMinute_data_ascending() throws Exception
+	{
+		DateTimeZone utc = DateTimeZone.UTC;
+		DateTime startDate = new DateTime(2014, 1, 1, 0, 0, 0, utc);
+		DateTime endDate = new DateTime(2014, 1, 1, 0, 2, 20, utc);
+		ListDataPointGroup group = new ListDataPointGroup("aggregationByDay");
+
+		for (DateTime second = endDate;
+			 second.isAfter(startDate);
+			 second = second.minusSeconds(10))
+		{
+			group.addDataPoint(new LongDataPoint(second.getMillis(), 1L));
+		}
+
+		ArrayList list = new ArrayList();
+		list.add(group);
+
+
+		group.sort(Order.DESC);
+
+		SumAggregator aggregator = new SumAggregator(new DoubleDataPointFactoryImpl());
+		aggregator.setSampling(new Sampling(1, TimeUnit.MINUTES));
+		aggregator.setAlignSampling(false);
+		aggregator.init();
+
+		DataPointGroup dayCount = aggregator.aggregate(group, Order.DESC);
+
+		assertThat(dayCount.hasNext(), is(true));
+		assertThat(dayCount.next().getLongValue(), is(3L));
+
+		assertThat(dayCount.hasNext(), is(true));
+		assertThat(dayCount.next().getLongValue(), is(6L));
+
+		assertThat(dayCount.hasNext(), is(true));
+		assertThat(dayCount.next().getLongValue(), is(5L));
+		assertThat(dayCount.hasNext(), is(false));
+	}
+
+
 }

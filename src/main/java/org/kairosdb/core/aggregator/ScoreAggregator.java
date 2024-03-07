@@ -92,7 +92,7 @@ public class ScoreAggregator implements Aggregator
 
     }
 
-    public DataPointGroup aggregate(DataPointGroup dataPointGroup)
+    public DataPointGroup aggregate(DataPointGroup dataPointGroup, org.kairosdb.core.datastore.Order order)
     {
         Objects.requireNonNull(dataPointGroup);
 

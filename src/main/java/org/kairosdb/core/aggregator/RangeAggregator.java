@@ -23,6 +23,7 @@ import org.kairosdb.core.DataPoint;
 import org.kairosdb.core.annotation.FeatureCompoundProperty;
 import org.kairosdb.core.annotation.FeatureProperty;
 import org.kairosdb.core.datastore.DataPointGroup;
+import org.kairosdb.core.datastore.Order;
 import org.kairosdb.core.datastore.TimeUnit;
 import org.kairosdb.plugin.Aggregator;
 
@@ -141,14 +142,14 @@ public abstract class RangeAggregator implements Aggregator, TimezoneAware
 			m_startTime = alignRangeBoundary(m_startTime);
 	}
 
-	public DataPointGroup aggregate(DataPointGroup dataPointGroup)
+	public DataPointGroup aggregate(DataPointGroup dataPointGroup, Order order)
 	{
 		requireNonNull(dataPointGroup);
 
 		if (m_exhaustive)
-			return (new ExhaustiveRangeDataPointAggregator(dataPointGroup, getSubAggregator()));
+			return (new ExhaustiveRangeDataPointAggregator(dataPointGroup, getSubAggregator(), order));
 		else
-			return (new RangeDataPointAggregator(dataPointGroup, getSubAggregator()));
+			return (new RangeDataPointAggregator(dataPointGroup, getSubAggregator(), order));
 	}
 
 	/**
@@ -316,6 +317,13 @@ public abstract class RangeAggregator implements Aggregator, TimezoneAware
 		return m_unitField.add(m_startTime, numberOfPastPeriods * samplingValue);
 	}
 
+	public long getStartRangeForPreviousSampling(long timestamp)
+	{
+		long samplingValue = m_sampling.getValue();
+		long numberOfPastPeriods = m_unitField.getDifferenceAsLong(timestamp/*getDataPointTime()*/, m_startTime) / samplingValue;
+		return m_unitField.add(m_startTime, (numberOfPastPeriods - 1) * samplingValue);
+	}
+
 	public long getEndRange(long timestamp)
 	{
 		long samplingValue = m_sampling.getValue();
@@ -334,12 +342,15 @@ public abstract class RangeAggregator implements Aggregator, TimezoneAware
 		protected Calendar m_calendar = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
 		protected Iterator<DataPoint> m_dpIterator;
 
+		protected Order m_order;
+
 
 		public RangeDataPointAggregator(DataPointGroup innerDataPointGroup,
-				RangeSubAggregator subAggregator)
+										RangeSubAggregator subAggregator, Order order)
 		{
 			super(innerDataPointGroup);
 			m_subAggregator = subAggregator;
+			m_order = order;
 			m_dpIterator = new ArrayList<DataPoint>().iterator();
 		}
 
@@ -354,11 +365,13 @@ public abstract class RangeAggregator implements Aggregator, TimezoneAware
 				//We calculate start and end ranges as the ranges may not be
 				//consecutive if data does not show up in each range.
 				//long startRange = getStartRange(currentDataPoint.getTimestamp());
-				long endRange = getEndRange(currentDataPoint.getTimestamp());
 
+				long timeRange = getEndRange(currentDataPoint.getTimestamp());
+				if(m_order == Order.DESC) {
+					timeRange = getStartRange(currentDataPoint.getTimestamp());
+				}
 				SubRangeIterator subIterator = new SubRangeIterator(
-						endRange);
-
+						timeRange, m_order);
 				m_dpIterator = m_subAggregator.getNextDataPoints(getDataPointTime(),
 						subIterator).iterator();
 			}
@@ -407,17 +420,24 @@ public abstract class RangeAggregator implements Aggregator, TimezoneAware
 		 */
 		protected class SubRangeIterator implements Iterator<DataPoint>
 		{
-			private long m_endRange;
+			private long m_timeRange;
 
-			public SubRangeIterator(long endRange)
+			private Order m_order;
+
+			public SubRangeIterator(long timeRange, Order order)
 			{
-				m_endRange = endRange;
+				m_timeRange = timeRange;
+				m_order = order;
 			}
 
 			@Override
 			public boolean hasNext()
 			{
-				return ((currentDataPoint != null) && (currentDataPoint.getTimestamp() < m_endRange));
+				if(m_order == Order.ASC) {
+					return ((currentDataPoint != null) && (currentDataPoint.getTimestamp() < m_timeRange));
+				}else{
+					return ((currentDataPoint != null) && (currentDataPoint.getTimestamp() >= m_timeRange));
+				}
 			}
 
 			@Override
@@ -443,9 +463,9 @@ public abstract class RangeAggregator implements Aggregator, TimezoneAware
 	{
 		private long m_nextExpectedRangeStartTime;
 
-		public ExhaustiveRangeDataPointAggregator(DataPointGroup innerDataPointGroup, RangeSubAggregator subAggregator)
+		public ExhaustiveRangeDataPointAggregator(DataPointGroup innerDataPointGroup, RangeSubAggregator subAggregator, Order order)
 		{
-			super(innerDataPointGroup, subAggregator);
+			super(innerDataPointGroup, subAggregator, order);
 			if (m_trim)
 				m_nextExpectedRangeStartTime = m_startTime;
 			else
@@ -463,7 +483,11 @@ public abstract class RangeAggregator implements Aggregator, TimezoneAware
 			if (m_trim)
 				return super.hasNext();
 			else
-				return (super.hasNext() || m_nextExpectedRangeStartTime <= m_queryEndTime);
+				if(m_order == Order.ASC)
+					return (super.hasNext() || m_nextExpectedRangeStartTime <= m_queryEndTime);
+				else
+					return (super.hasNext() || m_nextExpectedRangeStartTime >= m_queryStartTime);
+
 		}
 
 		@Override
@@ -483,17 +507,22 @@ public abstract class RangeAggregator implements Aggregator, TimezoneAware
 				long startRange = getStartRange(startTime);
 				long endRange = getEndRange(startTime);
 
-				// Next expected range starts just after this end range
-				setNextStartTime(endRange);
+				if(m_order == Order.ASC) {
+					// Next expected range starts just after this end range
+					setNextStartTime(endRange);
+				}else{
+					setNextStartTime(getStartRangeForPreviousSampling(startTime));
+				}
+
 				SubRangeIterator subIterator = new SubRangeIterator(
-						endRange);
+						endRange, m_order);
 
 				long dataPointTime = Long.MAX_VALUE;
 				if (currentDataPoint != null)
 					dataPointTime = currentDataPoint.getTimestamp();
 
 				if (m_alignStartTime || endRange <= dataPointTime)
-					dataPointTime = startRange;
+						dataPointTime = startRange;
 
 				m_dpIterator = m_subAggregator.getNextDataPoints(dataPointTime,
 						subIterator).iterator();

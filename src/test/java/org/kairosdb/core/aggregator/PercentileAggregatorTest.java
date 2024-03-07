@@ -17,14 +17,13 @@
 package org.kairosdb.core.aggregator;
 
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 import org.kairosdb.core.DataPoint;
 import org.kairosdb.core.datapoints.DoubleDataPoint;
 import org.kairosdb.core.datapoints.DoubleDataPointFactoryImpl;
 import org.kairosdb.core.datapoints.LongDataPoint;
 import org.kairosdb.core.datastore.DataPointGroup;
+import org.kairosdb.core.datastore.Order;
 import org.kairosdb.testing.ListDataPointGroup;
 
 import java.util.Arrays;
@@ -49,7 +48,7 @@ public class PercentileAggregatorTest
 	@Test(expected = NullPointerException.class)
 	public void test_nullSet_invalid()
 	{
-		aggregator.aggregate(null);
+		aggregator.aggregate(null, Order.ASC);
 	}
 
 	private double getActualPercentile(double percentile, double[] values)
@@ -104,7 +103,7 @@ public class PercentileAggregatorTest
 			group.addDataPoint(new DoubleDataPoint(1, j));
 			values[i] = j;
 		}
-		DataPointGroup results = aggregator.aggregate(group);
+		DataPointGroup results = aggregator.aggregate(group, Order.ASC);
 		assertThat(results.hasNext(), equalTo(true));
 		DataPoint dataPoint = results.next();
 		assertThat(dataPoint.getTimestamp(), equalTo(1L));
@@ -129,7 +128,7 @@ public class PercentileAggregatorTest
 			group.addDataPoint(new LongDataPoint(1, j));
 			values[i] = j;
 		}
-		DataPointGroup results = aggregator.aggregate(group);
+		DataPointGroup results = aggregator.aggregate(group, Order.ASC);
 		assertThat(results.hasNext(), equalTo(true));
 		DataPoint dataPoint = results.next();
 		assertThat(dataPoint.getTimestamp(), equalTo(1L));
@@ -164,7 +163,7 @@ public class PercentileAggregatorTest
 				values[i] = j;
 			}
 		}
-		DataPointGroup results = aggregator.aggregate(group);
+		DataPointGroup results = aggregator.aggregate(group, Order.ASC);
 		assertThat(results.hasNext(), equalTo(true));
 		DataPoint dataPoint = results.next();
 		assertThat(dataPoint.getTimestamp(), equalTo(1L));
@@ -240,7 +239,7 @@ public class PercentileAggregatorTest
 	{
 		ListDataPointGroup group = new ListDataPointGroup("group");
 
-		DataPointGroup results = aggregator.aggregate(group);
+		DataPointGroup results = aggregator.aggregate(group, Order.ASC);
 
 		assertThat(results.hasNext(), equalTo(false));
 	}

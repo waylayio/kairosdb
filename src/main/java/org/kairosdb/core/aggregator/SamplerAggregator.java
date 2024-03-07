@@ -23,6 +23,7 @@ import org.kairosdb.core.annotation.FeatureComponent;
 import org.kairosdb.core.annotation.FeatureProperty;
 import org.kairosdb.core.datapoints.DoubleDataPointFactory;
 import org.kairosdb.core.datastore.DataPointGroup;
+import org.kairosdb.core.datastore.Order;
 import org.kairosdb.core.datastore.TimeUnit;
 import org.kairosdb.plugin.Aggregator;
 import org.kairosdb.util.Util;
@@ -52,9 +53,9 @@ public class SamplerAggregator implements Aggregator, TimezoneAware
 		m_sampling = new Sampling(1, TimeUnit.MILLISECONDS);
 	}
 
-	public DataPointGroup aggregate(DataPointGroup dataPointGroup)
+	public DataPointGroup aggregate(DataPointGroup dataPointGroup, Order order)
 	{
-		return (new SamplerDataPointAggregator(dataPointGroup));
+		return (new SamplerDataPointAggregator(dataPointGroup, order));
 	}
 
 	@Override
@@ -89,9 +90,11 @@ public class SamplerAggregator implements Aggregator, TimezoneAware
 
 	private class SamplerDataPointAggregator extends AggregatedDataPointGroupWrapper
 	{
-		SamplerDataPointAggregator(DataPointGroup innerDataPointGroup)
+		private Order m_order;
+		SamplerDataPointAggregator(DataPointGroup innerDataPointGroup, Order order)
 		{
 			super(innerDataPointGroup);
+			m_order = order;
 		}
 
 		@Override
@@ -110,6 +113,8 @@ public class SamplerAggregator implements Aggregator, TimezoneAware
 			//This defaults the rate to 0 if no more data points exists
 			double x1 = 0;
 			long y1 = y0 + 1;
+			if(m_order == Order.DESC)
+				y1= y0 - 1;
 
 			if (hasNextInternal())
 			{
@@ -126,6 +131,8 @@ public class SamplerAggregator implements Aggregator, TimezoneAware
 				}
 			}
 			double rate = x1 / (y1 - y0) * Util.getSamplingDuration(y0, m_sampling, m_timeZone);
+			if(m_order == Order.DESC)
+				rate = x0 / (y0 - y1) * Util.getSamplingDuration(y1, m_sampling, m_timeZone);
 
 			return (m_dataPointFactory.createDataPoint(y1, rate));
 		}

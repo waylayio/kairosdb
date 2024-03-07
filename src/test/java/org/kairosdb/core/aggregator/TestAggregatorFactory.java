@@ -62,6 +62,7 @@ public class TestAggregatorFactory implements FeatureProcessingFactory<Aggregato
 		addAggregator(LastAggregator.class);
 		addAggregator(SaveAsAggregator.class);
 		addAggregator(TrimAggregator.class);
+		addAggregator(DataGapsMarkingAggregator.class);
 
 		injector = Guice.createInjector(new AbstractModule()
 		{

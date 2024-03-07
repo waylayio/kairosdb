@@ -21,6 +21,30 @@ If you want to test KairosDB in Kubernetes please follow the instructions from [
 
 Join the [KairosDB discussion group](https://groups.google.com/forum/#!forum/kairosdb-group).
 
+## Building and releasing WAYLAY branch
+
+The Waylay branch is built using maven.
+
+Note that the version number includes a patch number (e.g. the "+2" in 1.2.1-waylay+2). This patch number
+should be incremented on each release (and the base KairosDB version should remain unchanged).
+
+To run tests using a local Cassandra installation, run
+
+    $ CASSANDRA_HOST=localhost mvn clean test
+
+Running `mvn test` without the `CASSANDRA_HOST` environment variable will skip tests that depend on Cassandra.
+
+Running `mvn deploy` will push the artifacts, including the distributable .tar.gz to Nexus
+(make sure you have specified credentials for NEXUS `maven-releases` server in settings.xml)
+
+
+Releases can be performed with the following command (TODO:make sure that the release pushes the artifacts to nexus):
+
+    mvn clean -DskipTests -Darguments=-DskipTests -Dmaven.javadoc.skip=true  release:perform
+
+Note that the `build` directory which is created by a number of tests doesn't always get cleaned up properly by
+the tests. This means that it may be necessary to do a `rm -rf build` between builds of this repo.
+
 ## Contributing to KairosDB
 
 Contributions to KairosDB are **very welcome**. KairosDB is mainly developed in Java, but there's a lot of tasks for non-Java programmers too, so don't feel shy and join us!

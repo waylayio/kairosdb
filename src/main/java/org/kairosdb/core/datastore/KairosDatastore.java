@@ -553,7 +553,7 @@ public class KairosDatastore implements KairosPostConstructInit
 
 				if (m_metric.getLimit() != 0)
 				{
-					aggregatedGroup = new LimitAggregator(m_metric.getLimit()).aggregate(aggregatedGroup);
+					aggregatedGroup = new LimitAggregator(m_metric.getLimit()).aggregate(aggregatedGroup, m_metric.getOrder());
 				}
 
 				//This will pipe the aggregators together.
@@ -561,7 +561,7 @@ public class KairosDatastore implements KairosPostConstructInit
 				{
 					//Make sure the aggregator can handle this type of data.
 					if (aggregator.canAggregate(groupType)) {
-						aggregatedGroup = aggregator.aggregate(aggregatedGroup);
+						aggregatedGroup = aggregator.aggregate(aggregatedGroup, m_metric.getOrder());
 						groupType = aggregator.getAggregatedGroupType(groupType);
 					}
 				}

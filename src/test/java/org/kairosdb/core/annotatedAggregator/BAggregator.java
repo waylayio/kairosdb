@@ -3,6 +3,7 @@ package org.kairosdb.core.annotatedAggregator;
 
 import org.kairosdb.core.annotation.FeatureProperty;
 import org.kairosdb.core.datastore.DataPointGroup;
+import org.kairosdb.core.datastore.Order;
 import org.kairosdb.plugin.Aggregator;
 
 public class BAggregator implements Aggregator
@@ -17,7 +18,7 @@ public class BAggregator implements Aggregator
     private int alpha;
 
     @Override
-    public DataPointGroup aggregate(DataPointGroup dataPointGroup)
+    public DataPointGroup aggregate(DataPointGroup dataPointGroup, Order order)
     {
         return null;
     }

@@ -21,6 +21,7 @@ import org.kairosdb.core.DataPoint;
 import org.kairosdb.core.datapoints.DoubleDataPointFactoryImpl;
 import org.kairosdb.core.datapoints.LongDataPoint;
 import org.kairosdb.core.datastore.DataPointGroup;
+import org.kairosdb.core.datastore.Order;
 import org.kairosdb.testing.ListDataPointGroup;
 
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -31,7 +32,7 @@ public class SamplerAggregatorTest
     @Test(expected = NullPointerException.class)
     public void test_nullSet_invalid()
     {
-        new SamplerAggregator(new DoubleDataPointFactoryImpl()).aggregate(null);
+        new SamplerAggregator(new DoubleDataPointFactoryImpl()).aggregate(null, Order.ASC);
     }
 
     @Test
@@ -44,7 +45,7 @@ public class SamplerAggregatorTest
         group.addDataPoint(new LongDataPoint(4, 40));
 
         SamplerAggregator samplerAggregator = new SamplerAggregator(new DoubleDataPointFactoryImpl());
-        DataPointGroup results = samplerAggregator.aggregate(group);
+        DataPointGroup results = samplerAggregator.aggregate(group, Order.ASC);
 
         DataPoint dp = results.next();
         assertThat(dp.getTimestamp(), equalTo(2L));
@@ -60,6 +61,31 @@ public class SamplerAggregatorTest
     }
 
     @Test
+    public void test_steadyRate_descending()
+    {
+        ListDataPointGroup group = new ListDataPointGroup("rate");
+        group.addDataPoint(new LongDataPoint(4, 40));
+        group.addDataPoint(new LongDataPoint(3, 30));
+        group.addDataPoint(new LongDataPoint(2, 20));
+        group.addDataPoint(new LongDataPoint(1, 10));
+
+        SamplerAggregator samplerAggregator = new SamplerAggregator(new DoubleDataPointFactoryImpl());
+        DataPointGroup results = samplerAggregator.aggregate(group, Order.DESC);
+
+        DataPoint dp = results.next();
+        assertThat(dp.getTimestamp(), equalTo(3L));
+        assertThat(dp.getDoubleValue(), equalTo(40.0));
+
+        dp = results.next();
+        assertThat(dp.getTimestamp(), equalTo(2L));
+        assertThat(dp.getDoubleValue(), equalTo(30.0));
+
+        dp = results.next();
+        assertThat(dp.getTimestamp(), equalTo(1L));
+        assertThat(dp.getDoubleValue(), equalTo(20.0));
+    }
+
+    @Test
     public void test_changingRate()
     {
         ListDataPointGroup group = new ListDataPointGroup("rate");
@@ -69,7 +95,7 @@ public class SamplerAggregatorTest
         group.addDataPoint(new LongDataPoint(4, 20));
 
         SamplerAggregator samplerAggregator = new SamplerAggregator(new DoubleDataPointFactoryImpl());
-        DataPointGroup results = samplerAggregator.aggregate(group);
+        DataPointGroup results = samplerAggregator.aggregate(group, Order.ASC);
 
         DataPoint dp = results.next();
         assertThat(dp.getTimestamp(), equalTo(2L));
@@ -94,7 +120,7 @@ public class SamplerAggregatorTest
         group.addDataPoint(new LongDataPoint(6, 20));
 
         SamplerAggregator samplerAggregator = new SamplerAggregator(new DoubleDataPointFactoryImpl());
-        DataPointGroup results = samplerAggregator.aggregate(group);
+        DataPointGroup results = samplerAggregator.aggregate(group, Order.ASC);
 
         DataPoint dp = results.next();
         assertThat(dp.getTimestamp(), equalTo(2L));
@@ -121,7 +147,7 @@ public class SamplerAggregatorTest
         group.addDataPoint(new LongDataPoint(3, 30));
 
         SamplerAggregator samplerAggregator = new SamplerAggregator(new DoubleDataPointFactoryImpl());
-        DataPointGroup results = samplerAggregator.aggregate(group);
+        DataPointGroup results = samplerAggregator.aggregate(group, Order.ASC);
 
         DataPoint dp = results.next();
     }

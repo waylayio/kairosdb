@@ -8,6 +8,7 @@ import org.kairosdb.core.annotation.FeatureComponent;
 import org.kairosdb.core.annotation.FeatureProperty;
 import org.kairosdb.core.annotation.ValidationProperty;
 import org.kairosdb.core.datastore.DataPointGroup;
+import org.kairosdb.core.datastore.Order;
 import org.kairosdb.core.groupby.GroupByResult;
 import org.kairosdb.core.groupby.TagGroupBy;
 import org.kairosdb.eventbus.FilterEventBus;
@@ -87,7 +88,7 @@ public class SaveAsAggregator implements Aggregator, GroupByAware
 	}
 
 	@Override
-	public DataPointGroup aggregate(DataPointGroup dataPointGroup)
+	public DataPointGroup aggregate(DataPointGroup dataPointGroup, Order order)
 	{
 		return new SaveAsDataPointAggregator(dataPointGroup);
 	}

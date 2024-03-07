@@ -21,6 +21,7 @@ import org.kairosdb.core.DataPoint;
 import org.kairosdb.core.datapoints.LongDataPoint;
 import org.kairosdb.core.datapoints.NullDataPoint;
 import org.kairosdb.core.datastore.DataPointGroup;
+import org.kairosdb.core.datastore.Order;
 import org.kairosdb.core.datastore.TimeUnit;
 import org.kairosdb.testing.ListDataPointGroup;
 
@@ -41,7 +42,7 @@ public class DataGapsMarkingAggregatorTest
 	@Test(expected = NullPointerException.class)
 	public void test_nullSet_invalid()
 	{
-		aggregator.aggregate(null);
+		aggregator.aggregate(null, Order.ASC);
 	}
 
 
@@ -56,7 +57,7 @@ public class DataGapsMarkingAggregatorTest
 		aggregator.setStartTime(1);
 		aggregator.setEndTime(5);
 		aggregator.init();
-		DataPointGroup results = aggregator.aggregate(group);
+		DataPointGroup results = aggregator.aggregate(group, Order.ASC);
 
 		results.next();
 		DataPoint dataPoint = results.next();
@@ -82,7 +83,7 @@ public class DataGapsMarkingAggregatorTest
 		aggregator.setStartTime(0);
 		aggregator.setEndTime(5);
 		aggregator.init();
-		DataPointGroup results = aggregator.aggregate(group);
+		DataPointGroup results = aggregator.aggregate(group, Order.ASC);
 
 		DataPoint dataPoint = results.next();
 		assertThat(dataPoint.getTimestamp(), equalTo(0L));
@@ -136,7 +137,7 @@ public class DataGapsMarkingAggregatorTest
 		aggregator.setStartTime(1);
 		aggregator.setEndTime(5);
 		aggregator.init();
-		DataPointGroup results = aggregator.aggregate(group);
+		DataPointGroup results = aggregator.aggregate(group, Order.ASC);
 
 		DataPoint dataPoint = results.next();
 		assertThat(dataPoint.getTimestamp(), equalTo(1L));
@@ -174,7 +175,7 @@ public class DataGapsMarkingAggregatorTest
 		aggregator.setStartTime(1);
 		aggregator.setEndTime(7);
 		aggregator.init();
-		DataPointGroup results = aggregator.aggregate(group);
+		DataPointGroup results = aggregator.aggregate(group, Order.ASC);
 
 		DataPoint dataPoint = results.next();
 		assertThat(dataPoint.getTimestamp(), equalTo(1L));
@@ -208,7 +209,7 @@ public class DataGapsMarkingAggregatorTest
 
 		assertThat(results.hasNext(), equalTo(false));
 	}
-	
+
 	@Test
 	public void test_withTrimGapsBeforeAndAfterData()
 	{
@@ -221,7 +222,7 @@ public class DataGapsMarkingAggregatorTest
 		aggregator.setEndTime(7);
 		aggregator.setTrim(true);
 		aggregator.init();
-		DataPointGroup results = aggregator.aggregate(group);
+		DataPointGroup results = aggregator.aggregate(group, Order.ASC);
 
 
 		DataPoint dataPoint = results.next();
@@ -255,7 +256,7 @@ public class DataGapsMarkingAggregatorTest
 		aggregator.init();
 
 		assertThat(
-				ImmutableList.copyOf(aggregator.aggregate(group)),
+				ImmutableList.copyOf(aggregator.aggregate(group, Order.ASC)),
 				Matchers.contains(
 						ImmutableList.of(
 								dataPoint(0, 0L),
@@ -279,7 +280,7 @@ public class DataGapsMarkingAggregatorTest
 		aggregator.init();
 
 		assertThat(
-				ImmutableList.copyOf(aggregator.aggregate(group)),
+				ImmutableList.copyOf(aggregator.aggregate(group, Order.ASC)),
 				Matchers.contains(
 						ImmutableList.of(
 								dataPoint(0, 0L),
@@ -304,7 +305,7 @@ public class DataGapsMarkingAggregatorTest
 		aggregator.init();
 
 		assertThat(
-				ImmutableList.copyOf(aggregator.aggregate(group)),
+				ImmutableList.copyOf(aggregator.aggregate(group, Order.ASC)),
 				Matchers.contains(
 						ImmutableList.of(
 								dataPoint(0, 0L),

@@ -23,9 +23,7 @@ import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.SetMultimap;
 import org.hamcrest.CoreMatchers;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.*;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.kairosdb.core.*;
@@ -37,6 +35,7 @@ import org.kairosdb.core.queue.MemoryQueueProcessor;
 import org.kairosdb.datastore.DatastoreMetricQueryImpl;
 import org.kairosdb.datastore.DatastoreTestHelper;
 import org.kairosdb.events.DataPointEvent;
+import org.kairosdb.testing.AssumingCassandraRule;
 import org.kairosdb.util.IngestExecutorService;
 
 import java.io.IOException;
@@ -56,6 +55,8 @@ import static org.junit.Assert.assertFalse;
 
 public class CassandraDatastoreTest extends DatastoreTestHelper
 {
+	@ClassRule
+	public static AssumingCassandraRule assumingCassandraRule = new AssumingCassandraRule();
 	private static final String ROW_KEY_TEST_METRIC = "row_key_test_metric";
 	private static final String ROW_KEY_BIG_METRIC = "row_key_big_metric";
 	private static final String TAG_INDEXED_ROW_KEY_METRIC = "tag_indexed_row_key_metric";
@@ -375,6 +376,7 @@ public class CassandraDatastoreTest extends DatastoreTestHelper
 	@AfterClass
 	public static void closeDatastore() throws InterruptedException, IOException, DatastoreException
 	{
+		Assume.assumeNotNull(s_datastore);
 		for (String metricName : metricNames)
 		{
 			deleteMetric(metricName);

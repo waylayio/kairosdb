@@ -6,6 +6,7 @@ import org.kairosdb.core.DataPoint;
 import org.kairosdb.core.annotation.FeatureComponent;
 import org.kairosdb.core.annotation.FeatureProperty;
 import org.kairosdb.core.datastore.DataPointGroup;
+import org.kairosdb.core.datastore.Order;
 import org.kairosdb.plugin.Aggregator;
 
 /**
@@ -47,7 +48,7 @@ public class TrimAggregator implements Aggregator
 	private Trim m_trim;
 
 	@Override
-	public DataPointGroup aggregate(DataPointGroup dataPointGroup)
+	public DataPointGroup aggregate(DataPointGroup dataPointGroup, Order order)
 	{
 		return new TimDataPointAggregator(dataPointGroup);
 	}
