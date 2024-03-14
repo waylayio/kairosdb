@@ -192,13 +192,13 @@ public class KairosDatastoreTest
 		DatastoreQuery dq = datastore.createQuery(metric);
 		List<DataPointGroup> results = dq.execute();
 
-    	DataPointGroup group = results.get(0);
+		DataPointGroup group = results.get(0);
 		assertThat(group.hasNext(), equalTo(true));
 		DataPoint dataPoint = group.next();
 		assertThat(dataPoint.getTimestamp(), equalTo(1001000L));
 		assertThat(dataPoint.getLongValue(), equalTo(6L));
 		assertThat(group.hasNext(), equalTo(false));
-        dq.close();
+		dq.close();
 	}
 
 	@Test
