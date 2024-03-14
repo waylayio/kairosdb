@@ -514,8 +514,14 @@ public abstract class RangeAggregator implements Aggregator, TimezoneAware
 					setNextStartTime(getStartRangeForPreviousSampling(startTime));
 				}
 
-				SubRangeIterator subIterator = new SubRangeIterator(
-						endRange, m_order);
+				SubRangeIterator subIterator = null;
+				if(m_order == Order.ASC)
+					subIterator = new SubRangeIterator(
+							endRange, m_order);
+				else
+					subIterator = new SubRangeIterator(
+							startRange, m_order);
+
 
 				long dataPointTime = Long.MAX_VALUE;
 				if (currentDataPoint != null)

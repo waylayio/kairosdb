@@ -118,6 +118,8 @@ public class KairosDatastoreTest
 
 		QueryMetric metric = new QueryMetric(238433400000L, 238433402000L,0, "metric1");
 		Aggregator agg = aggFactory.createFeatureProcessor("sum");
+		((RangeAggregator)agg).setStartTime(238433400000L);
+		((RangeAggregator)agg).setEndTime(238433402000L);
 		((RangeAggregator)agg).setAlignStartTime(true);
 		((RangeAggregator)agg).setAlignSampling(false);
 
@@ -125,6 +127,8 @@ public class KairosDatastoreTest
 		((RangeAggregator)agg).init();
 
 		Aggregator agg2 = aggFactory.createFeatureProcessor("gaps");
+		((RangeAggregator)agg2).setStartTime(238433400000L);
+		((RangeAggregator)agg2).setEndTime(238433402000L);
 		((RangeAggregator)agg2).setAlignStartTime(true);
 		((RangeAggregator)agg2).setAlignSampling(false);
 		((RangeAggregator)agg2).setSampling(new Sampling(1, TimeUnit.SECONDS));
@@ -150,6 +154,51 @@ public class KairosDatastoreTest
 
 
 		dq.close();
+	}
+
+	@Test
+	public void test_query_sumAggregatorSecondCaseDesc() throws KairosDBException
+	{
+		TestDatastoreSumAggregatorDesc2 testds = new TestDatastoreSumAggregatorDesc2();
+		KairosDatastore datastore = new KairosDatastore(testds, new QueryQueuingManager(1, "hostname"),
+				new TestDataPointFactory(), false);
+		datastore.init();
+
+		QueryMetric metric = new QueryMetric(1001000L, 1005000L,0, "metric1");
+		metric.setOrder(Order.DESC);
+		Aggregator agg = aggFactory.createFeatureProcessor("sum");
+		((RangeAggregator)agg).setStartTime(1001000L);
+		((RangeAggregator)agg).setEndTime(1005000L);
+
+		((RangeAggregator)agg).setAlignStartTime(true);
+		((RangeAggregator)agg).setAlignSampling(false);
+
+		((RangeAggregator)agg).setSampling(new Sampling(5, TimeUnit.SECONDS));
+		((RangeAggregator)agg).init();
+
+		Aggregator agg2 = aggFactory.createFeatureProcessor("gaps");
+		((RangeAggregator)agg2).setStartTime(1001000L);
+		((RangeAggregator)agg2).setEndTime(1005000L);
+		((RangeAggregator)agg2).setAlignStartTime(true);
+		((RangeAggregator)agg2).setAlignSampling(false);
+		((RangeAggregator)agg2).setSampling(new Sampling(5, TimeUnit.SECONDS));
+
+		((RangeAggregator)agg2).init();
+		metric.addAggregator(agg);
+		metric.addAggregator(agg2);
+
+
+
+		DatastoreQuery dq = datastore.createQuery(metric);
+		List<DataPointGroup> results = dq.execute();
+
+
+    	DataPointGroup group = results.get(0);
+		assertThat(group.hasNext(), equalTo(true));
+		DataPoint dataPoint = group.next();
+		assertThat(dataPoint.getTimestamp(), equalTo(1001000L));
+		assertThat(dataPoint.getLongValue(), equalTo(6L));
+        dq.close();
 	}
 
 	@Test
@@ -777,6 +826,124 @@ public class KairosDatastoreTest
 				dataPointWriter.close();
 
 				dataPointWriter = queryCallback.startDataPointSet(LegacyDataPointFactory.DATASTORE_TYPE, Collections.emptySortedMap());
+
+				dataPointWriter.close();
+			}
+			catch (IOException e)
+			{
+				throw new DatastoreException(e);
+			}
+		}
+
+		@Override
+		public void deleteDataPoints(DatastoreMetricQuery deleteQuery)
+		{
+		}
+
+		@Override
+		public TagSet queryMetricTags(DatastoreMetricQuery query)
+		{
+			return null;  //To change body of implemented methods use File | Settings | File Templates.
+		}
+
+		@Override
+		public void indexMetricTags(DatastoreMetricQuery query)
+		{
+		}
+
+		@Override
+		public long getMinTimeValue()
+		{
+			return Long.MIN_VALUE;
+		}
+
+		@Override
+		public long getMaxTimeValue()
+		{
+			return Long.MAX_VALUE;
+		}
+
+		@Override
+		public void setValue(String service, String serviceKey, String key, String value)
+		{
+
+		}
+
+		@Override
+		public ServiceKeyValue getValue(String service, String serviceKey, String key)
+		{
+			return null;
+		}
+
+		@Override
+		public Iterable<String> listServiceKeys(String service)
+		{
+			return null;
+		}
+
+		@Override
+		public Iterable<String> listKeys(String service, String serviceKey)
+		{
+			return null;
+		}
+
+		@Override
+		public Iterable<String> listKeys(String service, String serviceKey, String keyStartsWith)
+		{
+			return null;
+		}
+
+		@Override
+		public void deleteKey(String service, String serviceKey, String key)
+		{
+		}
+
+		@Override
+		public Date getServiceKeyLastModifiedTime(String service, String serviceKey)
+		{
+			return null;
+		}
+	}
+
+	private static class TestDatastoreSumAggregatorDesc2 implements Datastore, ServiceKeyStore
+	{
+		TestDatastoreSumAggregatorDesc2()
+		{
+		}
+
+		@Override
+		public void close()
+		{
+		}
+
+		@Override
+		public Iterable<String> getMetricNames(String prefix)
+		{
+			return null;
+		}
+
+		@Override
+		public Iterable<String> getTagNames()
+		{
+			return null;
+		}
+
+		@Override
+		public Iterable<String> getTagValues()
+		{
+			return null;
+		}
+
+		@Override
+		public void queryDatabase(DatastoreMetricQuery query, QueryCallback queryCallback)
+				throws DatastoreException
+		{
+			try
+			{
+				QueryCallback.DataPointWriter dataPointWriter = queryCallback.startDataPointSet(LegacyDataPointFactory.DATASTORE_TYPE, Collections.emptySortedMap());
+				dataPointWriter.addDataPoint(new LegacyLongDataPoint(1004000L, 2));
+				dataPointWriter.addDataPoint(new LegacyLongDataPoint(1003000L, 3));
+				dataPointWriter.addDataPoint(new LegacyLongDataPoint(1002000L, 1));
 
 				dataPointWriter.close();
 			}
