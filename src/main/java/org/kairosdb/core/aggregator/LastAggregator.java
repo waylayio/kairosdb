@@ -63,10 +63,15 @@ public class LastAggregator extends RangeAggregator
 		public Iterable<DataPoint> getNextDataPoints(long returnTime, Iterator<DataPoint> dataPointRange)
 		{
 			DataPoint last = null;
-			Long lastTime = 0L;
+			long lastTime = Long.MIN_VALUE;
 			while (dataPointRange.hasNext())
 			{
-				last = dataPointRange.next();
+				DataPoint current = dataPointRange.next();
+				if (current.getTimestamp() >= lastTime)
+				{
+					last = current;
+					lastTime = current.getTimestamp();
+				}
 			}
 
 			if (last != null)

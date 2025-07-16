@@ -61,23 +61,26 @@ public class FirstAggregator extends RangeAggregator
 		@Override
 		public Iterable<DataPoint> getNextDataPoints(long returnTime, Iterator<DataPoint> dataPointRange)
 		{
-			Iterable<DataPoint> ret;
-			if (dataPointRange.hasNext())
-			{
-				DataPoint next = dataPointRange.next();
-				next.setTimestamp(returnTime);
-				ret = Collections.singletonList(next);
-			}
-			else
-				ret = Collections.emptyList();
-
-			//Chew up the rest of the data points in range
+			DataPoint first = null;
+			long firstTime = Long.MIN_VALUE;
 			while (dataPointRange.hasNext())
 			{
-				dataPointRange.next();
+				DataPoint current = dataPointRange.next();
+				if(first == null){
+					firstTime = current.getTimestamp();
+					first = current;
+					first.setTimestamp(returnTime);
+				}else {
+					if (current.getTimestamp() < firstTime) {
+						firstTime = current.getTimestamp();
+						first = current;
+						first.setTimestamp(returnTime);
+
+					}
+				}
 			}
 
-			return ret;
+			return first != null ? Collections.singletonList(first) : Collections.emptyList();
 		}
 	}
 }
