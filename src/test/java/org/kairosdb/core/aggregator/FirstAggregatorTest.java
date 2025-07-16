@@ -24,6 +24,7 @@ import org.kairosdb.core.datapoints.LongDataPoint;
 import org.kairosdb.core.datapoints.StringDataPoint;
 import org.kairosdb.core.datastore.DataPointGroup;
 import org.kairosdb.core.datastore.Order;
+import org.kairosdb.core.datastore.TimeUnit;
 import org.kairosdb.testing.ListDataPointGroup;
 
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -217,5 +218,45 @@ public class FirstAggregatorTest
 		assertThat(((StringDataPoint)dataPoint).getValue(), equalTo("g"));
 
 		assertThat(results.hasNext(), equalTo(false));
+	}
+
+	@Test
+	public void test_WPPM2718_descending() {
+		FirstAggregator aggregator1 = new FirstAggregator();
+		aggregator1.setSampling(new Sampling(5, TimeUnit.SECONDS));
+		aggregator1.setStartTime(1001000);
+		aggregator1.setEndTime(1005000);
+		aggregator1.setAlignStartTime(true);
+		aggregator1.setAlignSampling(false);
+		aggregator1.init();
+		ListDataPointGroup group = new ListDataPointGroup("group");
+		group.addDataPoint(new LongDataPoint(1002000, 1));
+		group.addDataPoint(new LongDataPoint(1003000, 3));
+		group.addDataPoint(new LongDataPoint(1004000, 2));
+		group.sort(Order.DESC);
+		DataPointGroup results = aggregator1.aggregate(group, Order.DESC);
+		DataPoint dataPoint = results.next();
+		assertThat(dataPoint.getTimestamp(), equalTo(1001000L));
+		assertThat(dataPoint.getLongValue(), equalTo(1L));
+	}
+
+	@Test
+	public void test_WPPM2718_ascending() {
+		FirstAggregator aggregator1 = new FirstAggregator();
+		aggregator1.setSampling(new Sampling(5, TimeUnit.SECONDS));
+		aggregator1.setStartTime(1001000);
+		aggregator1.setEndTime(1005000);
+		aggregator1.setAlignStartTime(true);
+		aggregator1.setAlignSampling(false);
+		aggregator1.init();
+		ListDataPointGroup group = new ListDataPointGroup("group");
+		group.addDataPoint(new LongDataPoint(1002000, 1));
+		group.addDataPoint(new LongDataPoint(1003000, 3));
+		group.addDataPoint(new LongDataPoint(1004000, 2));
+		group.sort(Order.ASC);
+		DataPointGroup results = aggregator1.aggregate(group, Order.ASC);
+		DataPoint dataPoint = results.next();
+		assertThat(dataPoint.getTimestamp(), equalTo(1001000L));
+		assertThat(dataPoint.getLongValue(), equalTo(1L));
 	}
 }

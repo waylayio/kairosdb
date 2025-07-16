@@ -309,4 +309,44 @@ public class LastAggregatorTest
 
 		assertThat(results.hasNext(), equalTo(false));
 	}
+
+	@Test
+	public void test_WPPM2718_descending() {
+		LastAggregator aggregator1 = new LastAggregator();
+		aggregator1.setSampling(new Sampling(5, TimeUnit.SECONDS));
+		aggregator1.setStartTime(1001000);
+		aggregator1.setEndTime(1005000);
+		aggregator1.setAlignStartTime(true);
+		aggregator1.setAlignSampling(false);
+		aggregator1.init();
+		ListDataPointGroup group = new ListDataPointGroup("group");
+		group.addDataPoint(new LongDataPoint(1002000, 1));
+		group.addDataPoint(new LongDataPoint(1003000, 3));
+		group.addDataPoint(new LongDataPoint(1004000, 2));
+		group.sort(Order.DESC);
+		DataPointGroup results = aggregator1.aggregate(group, Order.DESC);
+		DataPoint dataPoint = results.next();
+		assertThat(dataPoint.getTimestamp(), equalTo(1001000L));
+		assertThat(dataPoint.getLongValue(), equalTo(2L));
+	}
+
+	@Test
+	public void test_WPPM2718_ascending() {
+		LastAggregator aggregator1 = new LastAggregator();
+		aggregator1.setSampling(new Sampling(5, TimeUnit.SECONDS));
+		aggregator1.setStartTime(1001000);
+		aggregator1.setEndTime(1005000);
+		aggregator1.setAlignStartTime(true);
+		aggregator1.setAlignSampling(false);
+		aggregator1.init();
+		ListDataPointGroup group = new ListDataPointGroup("group");
+		group.addDataPoint(new LongDataPoint(1002000, 1));
+		group.addDataPoint(new LongDataPoint(1003000, 3));
+		group.addDataPoint(new LongDataPoint(1004000, 2));
+		group.sort(Order.ASC);
+		DataPointGroup results = aggregator1.aggregate(group, Order.ASC);
+		DataPoint dataPoint = results.next();
+		assertThat(dataPoint.getTimestamp(), equalTo(1001000L));
+		assertThat(dataPoint.getLongValue(), equalTo(2L));
+	}
 }
