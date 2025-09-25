@@ -87,6 +87,12 @@ public class DatastoreMetricQueryImpl implements DatastoreMetricQuery
 	}
 
 	@Override
+	public boolean isReturnIngestionTimestamp()
+	{
+		return false;
+	}
+
+	@Override
 	public List<QueryPlugin> getPlugins()
 	{
 		return Collections.emptyList();

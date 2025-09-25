@@ -32,6 +32,7 @@ import org.kairosdb.core.DataPoint;
 import org.kairosdb.core.DataPointSet;
 import org.kairosdb.core.KairosDataPointFactory;
 import org.kairosdb.core.datapoints.DataPointFactory;
+import org.kairosdb.core.datapoints.IngestionTimestampDataPoint;
 import org.kairosdb.core.datapoints.LegacyDataPointFactory;
 import org.kairosdb.core.datapoints.LegacyDoubleDataPoint;
 import org.kairosdb.core.datapoints.LegacyLongDataPoint;
@@ -615,14 +616,16 @@ public class CassandraDatastore implements Datastore, ProcessorHandler, KairosMe
 		private final Semaphore m_semaphore;  //Used to notify caller when last query is done
 		private final QueryMonitor m_queryMonitor;
 		private final RowSpec m_rowSpec;
+		private final boolean m_returnIngestionTimestamp;
 
-		public QueryListener(DataPointsRowKey rowKey, QueryCallback callback, Semaphore querySemaphor, QueryMonitor queryMonitor, RowSpec rowSpec)
+		public QueryListener(DataPointsRowKey rowKey, QueryCallback callback, Semaphore querySemaphor, QueryMonitor queryMonitor, RowSpec rowSpec, boolean returnIngestionTimestamp)
 		{
 			m_rowKey = rowKey;
 			m_callback = callback;
 			m_semaphore = querySemaphor;
 			m_queryMonitor = queryMonitor;
 			m_rowSpec = rowSpec;
+			m_returnIngestionTimestamp = returnIngestionTimestamp;
 		}
 
 		@Override
@@ -650,26 +653,42 @@ public class CassandraDatastore implements Datastore, ProcessorHandler, KairosMe
 						ByteBuffer value = row.getBytes(1);
 						long timestamp = m_rowSpec.getColumnTimestamp(m_rowKey.getTimestamp(), columnTime);
 
+						// Get ingestion timestamp if requested and available
+						Long ingestionTimestamp = null;
+						if (m_returnIngestionTimestamp && row.getColumnDefinitions().size() > 2)
+						{
+							// WRITETIME returns timestamp in microseconds, convert to milliseconds
+							ingestionTimestamp = row.getLong(2) / 1000;
+						}
+
+						DataPoint dataPoint;
 						//If type is legacy type it will point to the same object, no need for equals
 						if (m_rowKey.getDataType() == LegacyDataPointFactory.DATASTORE_TYPE)
 						{
 							if (isLongValue(columnTime))
 							{
-								dataPointWriter.addDataPoint(
-										new LegacyLongDataPoint(timestamp,
-												ValueSerializer.getLongFromByteBuffer(value)));
+								dataPoint = new LegacyLongDataPoint(timestamp,
+										ValueSerializer.getLongFromByteBuffer(value));
 							}
 							else
 							{
-								dataPointWriter.addDataPoint(
-										new LegacyDoubleDataPoint(timestamp,
-												ValueSerializer.getDoubleFromByteBuffer(value)));
+								dataPoint = new LegacyDoubleDataPoint(timestamp,
+										ValueSerializer.getDoubleFromByteBuffer(value));
 							}
 						}
 						else
 						{
-							dataPointWriter.addDataPoint(
-									dataPointFactory.getDataPoint(timestamp, KDataInput.createInput(value)));
+							dataPoint = dataPointFactory.getDataPoint(timestamp, KDataInput.createInput(value));
+						}
+
+						// Wrap with ingestion timestamp if requested
+						if (m_returnIngestionTimestamp && ingestionTimestamp != null)
+						{
+							dataPointWriter.addDataPoint(new IngestionTimestampDataPoint(dataPoint, ingestionTimestamp));
+						}
+						else
+						{
+							dataPointWriter.addDataPoint(dataPoint);
 						}
 
 						m_queryMonitor.incrementCounter();
@@ -753,19 +772,36 @@ public class CassandraDatastore implements Datastore, ProcessorHandler, KairosMe
 			endBuffer.rewind();
 
 			BoundStatement boundStatement;
+			boolean returnIngestionTimestamp = query.isReturnIngestionTimestamp();
 			if (useLimit)
 			{
 				if (query.getOrder() == Order.ASC)
-					boundStatement = new BoundStatement(cluster.psDataPointsQueryAscLimit);
+				{
+					boundStatement = returnIngestionTimestamp ? 
+						new BoundStatement(cluster.psDataPointsQueryAscLimitWithWritetime) :
+						new BoundStatement(cluster.psDataPointsQueryAscLimit);
+				}
 				else
-					boundStatement = new BoundStatement(cluster.psDataPointsQueryDescLimit);
+				{
+					boundStatement = returnIngestionTimestamp ? 
+						new BoundStatement(cluster.psDataPointsQueryDescLimitWithWritetime) :
+						new BoundStatement(cluster.psDataPointsQueryDescLimit);
+				}
 			}
 			else
 			{
 				if (query.getOrder() == Order.ASC)
-					boundStatement = new BoundStatement(cluster.psDataPointsQueryAsc);
+				{
+					boundStatement = returnIngestionTimestamp ? 
+						new BoundStatement(cluster.psDataPointsQueryAscWithWritetime) :
+						new BoundStatement(cluster.psDataPointsQueryAsc);
+				}
 				else
-					boundStatement = new BoundStatement(cluster.psDataPointsQueryDesc);
+				{
+					boundStatement = returnIngestionTimestamp ? 
+						new BoundStatement(cluster.psDataPointsQueryDescWithWritetime) :
+						new BoundStatement(cluster.psDataPointsQueryDesc);
+				}
 			}
 
 			boundStatement.setBytesUnsafe(0, DATA_POINTS_ROW_KEY_SERIALIZER.toByteBuffer(rowKey));
@@ -792,7 +828,7 @@ public class CassandraDatastore implements Datastore, ProcessorHandler, KairosMe
 
 				queryResults.add(resultSetFuture);
 
-				Futures.addCallback(resultSetFuture, new QueryListener(rowKey, queryCallback, querySemaphore, queryMonitor, rowSpec), resultsExecutor);
+				Futures.addCallback(resultSetFuture, new QueryListener(rowKey, queryCallback, querySemaphore, queryMonitor, rowSpec, query.isReturnIngestionTimestamp()), resultsExecutor);
 			}
 			else
 			{
