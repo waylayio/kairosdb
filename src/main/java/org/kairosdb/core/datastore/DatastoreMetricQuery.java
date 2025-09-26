@@ -34,4 +34,6 @@ public interface DatastoreMetricQuery extends PluggableQuery
 	int getLimit();
 
 	Order getOrder();
+
+	boolean isReturnIngestionTimestamp();
 }

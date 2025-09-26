@@ -232,6 +232,7 @@ public class QueryParser
 				QueryMetric queryMetric = new QueryMetric(startTime, query.getCacheTime(), metric.getName());
 				queryMetric.setExcludeTags(metric.isExcludeTags());
 				queryMetric.setLimit(metric.getLimit());
+				queryMetric.setReturnIngestionTimestamp(metric.isReturnIngestionTimestamp());
 				queryMetric.setJsonObj(obj);
 
 				getEndTime(query).ifPresent(queryMetric::setEndTime);
@@ -556,12 +557,16 @@ public class QueryParser
 		@SerializedName("limit")
 		private int limit;
 
+		@SerializedName("return_ingestion_timestamp")
+		private boolean returnIngestionTimestamp;
+
 		public Metric(String name, boolean exclude_tags, TreeMultimap<String, String> tags)
 		{
 			this.name = name;
 			this.tags = tags;
 			this.exclude_tags = exclude_tags;
 			this.limit = 0;
+			this.returnIngestionTimestamp = false;
 		}
 
 		public String getName()
@@ -582,6 +587,11 @@ public class QueryParser
 		private boolean isExcludeTags()
 		{
 			return exclude_tags;
+		}
+
+		public boolean isReturnIngestionTimestamp()
+		{
+			return returnIngestionTimestamp;
 		}
 
 		String getCacheString()

@@ -33,6 +33,7 @@ public class DatastoreMetricQueryImpl implements DatastoreMetricQuery
 	private SetMultimap<String, String> m_tags;
 	private long m_startTime;
 	private long m_endTime;
+	private boolean m_returnIngestionTimestamp = false;
 
 
 	public DatastoreMetricQueryImpl(String name, SetMultimap<String, String> tags,
@@ -84,6 +85,17 @@ public class DatastoreMetricQueryImpl implements DatastoreMetricQuery
 	public Order getOrder()
 	{
 		return Order.ASC;
+	}
+
+	@Override
+	public boolean isReturnIngestionTimestamp()
+	{
+		return m_returnIngestionTimestamp;
+	}
+
+	public void setReturnIngestionTimestamp(boolean returnIngestionTimestamp)
+	{
+		m_returnIngestionTimestamp = returnIngestionTimestamp;
 	}
 
 	@Override

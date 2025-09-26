@@ -45,6 +45,7 @@ public class QueryMetric implements DatastoreMetricQuery
 	private Order order = Order.ASC;
 	private List<QueryPlugin> plugins;
 	private boolean explicitTags = false;
+	private boolean returnIngestionTimestamp = false;
 	private JsonObject m_jsonObj;
 
 	public QueryMetric(long start_time, int cacheTime, String name)
@@ -209,6 +210,17 @@ public class QueryMetric implements DatastoreMetricQuery
 		return (order);
 	}
 
+	public void setReturnIngestionTimestamp(boolean returnIngestionTimestamp)
+	{
+		this.returnIngestionTimestamp = returnIngestionTimestamp;
+	}
+
+	@Override
+	public boolean isReturnIngestionTimestamp()
+	{
+		return (returnIngestionTimestamp);
+	}
+
 	@Override
 	public List<QueryPlugin> getPlugins()
 	{
@@ -237,6 +249,7 @@ public class QueryMetric implements DatastoreMetricQuery
 				", limit=" + limit +
 				", order=" + order +
 				", plugins=" + plugins +
+				", returnIngestionTimestamp=" + returnIngestionTimestamp +
 				'}';
 	}
 

@@ -195,6 +195,15 @@ public class ClusterConnection
 	public static final String DATA_POINTS_QUERY_ASC_LIMIT = DATA_POINTS_QUERY_ASC+" LIMIT ?";
 	public static final String DATA_POINTS_QUERY_DESC_LIMIT = DATA_POINTS_QUERY_DESC+" LIMIT ?";
 
+	public static final String DATA_POINTS_QUERY_WITH_WRITETIME = "SELECT column1, value, WRITETIME(value) FROM data_points WHERE key = ? AND " +
+			"column1 >= ? AND column1 < ? ORDER BY column1";
+
+	public static final String DATA_POINTS_QUERY_ASC_WITH_WRITETIME = DATA_POINTS_QUERY_WITH_WRITETIME+" ASC";
+	public static final String DATA_POINTS_QUERY_DESC_WITH_WRITETIME = DATA_POINTS_QUERY_WITH_WRITETIME+" DESC";
+
+	public static final String DATA_POINTS_QUERY_ASC_LIMIT_WITH_WRITETIME = DATA_POINTS_QUERY_ASC_WITH_WRITETIME+" LIMIT ?";
+	public static final String DATA_POINTS_QUERY_DESC_LIMIT_WITH_WRITETIME = DATA_POINTS_QUERY_DESC_WITH_WRITETIME+" LIMIT ?";
+
 	public static final String DATA_POINTS_DELETE_RANGE = "DELETE FROM data_points " +
 			"WHERE key = ? AND column1 >= ? AND column1 <= ?";
 
@@ -305,6 +314,10 @@ public class ClusterConnection
 	public PreparedStatement psServiceIndexInsertModifiedTime;
 	public PreparedStatement psServiceIndexGetEntries;
 	public PreparedStatement psDataPointsDelete;
+	public PreparedStatement psDataPointsQueryAscWithWritetime;
+	public PreparedStatement psDataPointsQueryDescWithWritetime;
+	public PreparedStatement psDataPointsQueryAscLimitWithWritetime;
+	public PreparedStatement psDataPointsQueryDescLimitWithWritetime;
 
 	private Session m_session;
 	private final CassandraClient m_cassandraClient;
@@ -423,6 +436,10 @@ public class ClusterConnection
 			psDataPointsQueryDesc = m_session.prepare(DATA_POINTS_QUERY_DESC);
 			psDataPointsQueryAscLimit = m_session.prepare(DATA_POINTS_QUERY_ASC_LIMIT);
 			psDataPointsQueryDescLimit = m_session.prepare(DATA_POINTS_QUERY_DESC_LIMIT);
+			psDataPointsQueryAscWithWritetime = m_session.prepare(DATA_POINTS_QUERY_ASC_WITH_WRITETIME);
+			psDataPointsQueryDescWithWritetime = m_session.prepare(DATA_POINTS_QUERY_DESC_WITH_WRITETIME);
+			psDataPointsQueryAscLimitWithWritetime = m_session.prepare(DATA_POINTS_QUERY_ASC_LIMIT_WITH_WRITETIME);
+			psDataPointsQueryDescLimitWithWritetime = m_session.prepare(DATA_POINTS_QUERY_DESC_LIMIT_WITH_WRITETIME);
 
 			psRowKeyIndexQuery = m_session.prepare(ROW_KEY_INDEX_QUERY);
 			psRowKeyIndexDelete = m_session.prepare(ROW_KEY_INDEX_DELETE);
