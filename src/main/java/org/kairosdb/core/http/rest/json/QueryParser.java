@@ -560,13 +560,13 @@ public class QueryParser
 		@SerializedName("return_ingestion_timestamp")
 		private boolean returnIngestionTimestamp;
 
-		public Metric(String name, boolean exclude_tags, TreeMultimap<String, String> tags)
+		public Metric(String name, boolean exclude_tags, TreeMultimap<String, String> tags, boolean return_ingestion_timestamp)
 		{
 			this.name = name;
 			this.tags = tags;
 			this.exclude_tags = exclude_tags;
 			this.limit = 0;
-			this.returnIngestionTimestamp = false;
+			this.returnIngestionTimestamp = return_ingestion_timestamp;
 		}
 
 		public String getName()
@@ -792,6 +792,10 @@ public class QueryParser
 			if (jsonObject.get("exclude_tags") != null)
 				exclude_tags = jsonObject.get("exclude_tags").getAsBoolean();
 
+            boolean return_ingestion_timestamp = false;
+            if (jsonObject.get("return_ingestion_timestamp") != null)
+                return_ingestion_timestamp = jsonObject.get("return_ingestion_timestamp").getAsBoolean();
+
 			TreeMultimap<String, String> tags = TreeMultimap.create();
 			JsonElement jeTags = jsonObject.get("tags");
 			if (jeTags != null)
@@ -823,7 +827,7 @@ public class QueryParser
 				}
 			}
 
-			Metric ret = new Metric(name, exclude_tags, tags);
+			Metric ret = new Metric(name, exclude_tags, tags, return_ingestion_timestamp);
 
 			JsonElement limit = jsonObject.get("limit");
 			if (limit != null)
