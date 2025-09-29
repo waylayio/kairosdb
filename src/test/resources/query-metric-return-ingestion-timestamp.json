@@ -1,0 +1,22 @@
+{
+  "start_absolute": 784041330,
+  "end_absolute": 788879730,
+  "metrics": [
+    {
+      "name": "bob",
+      "return_ingestion_timestamp": true,
+      "tags": {
+        "host": ["bar", "foo"]
+      },
+      "aggregators": [
+        {
+          "name": "sum",
+          "sampling": {
+            "value": 10,
+            "unit": "minutes"
+          }
+        }
+      ]
+    }
+  ]
+}

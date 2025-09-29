@@ -340,7 +340,7 @@ public class QueryParserTest
 
 		assertBeanValidation(json, "query.bogus is not a valid time zone, must be one of " + DateTimeZone.getAvailableIDs());
 	}
-	
+
 	@Test
 	public void test_aggregator_sum_noSampling_valid() throws IOException, QueryException
 	{
@@ -586,6 +586,18 @@ public class QueryParserTest
 				createSumAggregator(new Sampling(24, TimeUnit.HOURS))
 		);
 	}
+
+    @Test
+    public void test_returnIngestionTimestamp() throws Exception
+    {
+        String json = Resources.toString(Resources.getResource("query-metric-return-ingestion-timestamp.json"), Charsets.UTF_8);
+
+        List<QueryMetric> results = parser.parseQueryMetric(json).getQueryMetrics();
+
+        assertThat(results.size(), equalTo(1));
+        QueryMetric queryMetric = results.get(0);
+        assertThat(queryMetric.isReturnIngestionTimestamp(), equalTo(true));
+    }
 
 	private void assertRollupBeanValidation(String json, String expectedMessage)
 	{
