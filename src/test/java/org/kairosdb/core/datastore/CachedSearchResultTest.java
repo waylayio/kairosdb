@@ -20,6 +20,7 @@ import org.junit.Test;
 import org.kairosdb.core.DataPoint;
 import org.kairosdb.core.KairosDataPointFactory;
 import org.kairosdb.core.TestDataPointFactory;
+import org.kairosdb.core.datapoints.IngestionTimestampDataPoint;
 import org.kairosdb.core.datapoints.LegacyDataPointFactory;
 import org.kairosdb.core.datapoints.LegacyDoubleDataPoint;
 import org.kairosdb.core.datapoints.LegacyLongDataPoint;
@@ -182,6 +183,109 @@ public class CachedSearchResultTest
 
 		assertThat(count, equalTo(numberOfDataPoints));
 
+	}
+
+	@Test
+	public void test_IngestionTimestampDataPoint_Preservation() throws IOException
+	{
+		String tempFile = System.getProperty("java.io.tmpdir") + "/baseFile_ingestion";
+		CachedSearchResult csResult =
+				CachedSearchResult.createCachedSearchResult("metric_ingestion", tempFile, dataPointFactory, true);
+
+		long now = System.currentTimeMillis();
+		long ingestionTime = now + 5000; // 5 seconds later
+
+		SortedMap<String, String> tags = new TreeMap<>();
+		tags.put("host", "A");
+		tags.put("client", "foo");
+		QueryCallback.DataPointWriter dataPointWriter = csResult.startDataPointSet(LegacyDataPointFactory.DATASTORE_TYPE, tags);
+
+		// Add regular data points
+		dataPointWriter.addDataPoint(new LegacyLongDataPoint(now, 42));
+
+		// Add IngestionTimestampDataPoint
+		LegacyLongDataPoint baseDataPoint = new LegacyLongDataPoint(now + 1, 43);
+		IngestionTimestampDataPoint ingestionDataPoint = new IngestionTimestampDataPoint(baseDataPoint, ingestionTime);
+		dataPointWriter.addDataPoint(ingestionDataPoint);
+
+		// Add another regular data point
+		dataPointWriter.addDataPoint(new LegacyDoubleDataPoint(now + 2, 44.1));
+
+		dataPointWriter.close();
+
+		List<DataPointRow> rows = csResult.getRows();
+		assertEquals(1, rows.size());
+
+		DataPointRow row = rows.get(0);
+
+		// Verify first data point (regular)
+		assertThat(row.hasNext(), equalTo(true));
+		DataPoint dp1 = row.next();
+		assertThat(dp1.isLong(), equalTo(true));
+		assertThat(dp1.getLongValue(), equalTo(42L));
+		assertThat(dp1.getTimestamp(), equalTo(now));
+		assertThat(dp1 instanceof IngestionTimestampDataPoint, equalTo(false));
+
+		// Verify second data point (IngestionTimestampDataPoint)
+		assertThat(row.hasNext(), equalTo(true));
+		DataPoint dp2 = row.next();
+		assertThat(dp2 instanceof IngestionTimestampDataPoint, equalTo(true));
+		IngestionTimestampDataPoint itdp = (IngestionTimestampDataPoint) dp2;
+		assertThat(itdp.isLong(), equalTo(true));
+		assertThat(itdp.getLongValue(), equalTo(43L));
+		assertThat(itdp.getTimestamp(), equalTo(now + 1));
+		assertThat(itdp.getIngestionTimestamp(), equalTo(ingestionTime));
+
+		// Verify third data point (regular)
+		assertThat(row.hasNext(), equalTo(true));
+		DataPoint dp3 = row.next();
+		assertThat(dp3.isDouble(), equalTo(true));
+		assertThat(dp3.getDoubleValue(), equalTo(44.1));
+		assertThat(dp3.getTimestamp(), equalTo(now + 2));
+		assertThat(dp3 instanceof IngestionTimestampDataPoint, equalTo(false));
+
+		assertThat(row.hasNext(), equalTo(false));
+
+		row.close();
+		csResult.close();
+
+		// Re-open cached file and verify the data is preserved correctly
+		csResult = CachedSearchResult.openCachedSearchResult("metric_ingestion", tempFile, 100, dataPointFactory, true);
+		rows = csResult.getRows();
+		assertEquals(1, rows.size());
+
+		row = rows.get(0);
+
+		// Verify first data point (regular) after reload
+		assertThat(row.hasNext(), equalTo(true));
+		dp1 = row.next();
+		assertThat(dp1.isLong(), equalTo(true));
+		assertThat(dp1.getLongValue(), equalTo(42L));
+		assertThat(dp1.getTimestamp(), equalTo(now));
+		assertThat(dp1 instanceof IngestionTimestampDataPoint, equalTo(false));
+
+		// Verify second data point (IngestionTimestampDataPoint) after reload
+		assertThat(row.hasNext(), equalTo(true));
+		dp2 = row.next();
+		assertThat(dp2 instanceof IngestionTimestampDataPoint, equalTo(true));
+		itdp = (IngestionTimestampDataPoint) dp2;
+		assertThat(itdp.isLong(), equalTo(true));
+		assertThat(itdp.getLongValue(), equalTo(43L));
+		assertThat(itdp.getTimestamp(), equalTo(now + 1));
+		assertThat(itdp.getIngestionTimestamp(), equalTo(ingestionTime));
+
+		// Verify third data point (regular) after reload
+		assertThat(row.hasNext(), equalTo(true));
+		dp3 = row.next();
+		assertThat(dp3.isDouble(), equalTo(true));
+		assertThat(dp3.getDoubleValue(), equalTo(44.1));
+		assertThat(dp3.getTimestamp(), equalTo(now + 2));
+		assertThat(dp3 instanceof IngestionTimestampDataPoint, equalTo(false));
+
+		assertThat(row.hasNext(), equalTo(false));
+
+		row.close();
+		csResult.close();
 	}
 
 	private void assertValues(DataPointRow dataPoints, Number... numbers)

@@ -34,5 +34,5 @@ jobs:
     - name: compile and test
       env:
         CLASSPATH: tools/tablesaw-1.2.8.jar
-      run: java make ivy-retrieve;java make clean test-all
+      run: java make ivy-retrieve;java make clean test-all;mvn clean test
 

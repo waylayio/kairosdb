@@ -657,8 +657,7 @@ public class CassandraDatastore implements Datastore, ProcessorHandler, KairosMe
 						Long ingestionTimestamp = null;
 						if (m_returnIngestionTimestamp && row.getColumnDefinitions().size() > 2)
 						{
-							// WRITETIME returns timestamp in microseconds, convert to milliseconds
-							ingestionTimestamp = row.getLong(2) / 1000;
+							ingestionTimestamp = row.getLong(2);
 						}
 
 						DataPoint dataPoint;
@@ -777,13 +776,13 @@ public class CassandraDatastore implements Datastore, ProcessorHandler, KairosMe
 			{
 				if (query.getOrder() == Order.ASC)
 				{
-					boundStatement = returnIngestionTimestamp ? 
+					boundStatement = returnIngestionTimestamp ?
 						new BoundStatement(cluster.psDataPointsQueryAscLimitWithWritetime) :
 						new BoundStatement(cluster.psDataPointsQueryAscLimit);
 				}
 				else
 				{
-					boundStatement = returnIngestionTimestamp ? 
+					boundStatement = returnIngestionTimestamp ?
 						new BoundStatement(cluster.psDataPointsQueryDescLimitWithWritetime) :
 						new BoundStatement(cluster.psDataPointsQueryDescLimit);
 				}
@@ -792,13 +791,13 @@ public class CassandraDatastore implements Datastore, ProcessorHandler, KairosMe
 			{
 				if (query.getOrder() == Order.ASC)
 				{
-					boundStatement = returnIngestionTimestamp ? 
+					boundStatement = returnIngestionTimestamp ?
 						new BoundStatement(cluster.psDataPointsQueryAscWithWritetime) :
 						new BoundStatement(cluster.psDataPointsQueryAsc);
 				}
 				else
 				{
-					boundStatement = returnIngestionTimestamp ? 
+					boundStatement = returnIngestionTimestamp ?
 						new BoundStatement(cluster.psDataPointsQueryDescWithWritetime) :
 						new BoundStatement(cluster.psDataPointsQueryDesc);
 				}
