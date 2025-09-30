@@ -49,8 +49,7 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.core.Is.is;
 import static org.hamcrest.core.IsNull.notNullValue;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.*;
 
 
 public class CassandraDatastoreTest extends DatastoreTestHelper
@@ -952,12 +951,10 @@ public class CassandraDatastoreTest extends DatastoreTestHelper
 		Thread.sleep(2000);  // Wait for data to be written
 
 		// Test direct call to CassandraDatastore with ingestion timestamp
-		DatastoreMetricQueryImpl directQuery = new DatastoreMetricQueryImpl(testMetric,
-				HashMultimap.create(), dataPointTime - 1000, dataPointTime + 1000);
-		directQuery.setReturnIngestionTimestamp(true);
-
+        QueryMetric queryMetric = new QueryMetric(dataPointTime - 1000,dataPointTime + 1000,0,testMetric);
+        queryMetric.setReturnIngestionTimestamp(true);
 		CachedSearchResult searchResult = createCache("ingestion_timestamp_direct_test");
-		s_datastore.queryDatabase(directQuery, searchResult);
+		s_datastore.queryDatabase(queryMetric, searchResult);
 		List<DataPointRow> rows = searchResult.getRows();
 
 		assertThat("Should have at least one row", rows.size(), greaterThan(0));
@@ -972,28 +969,17 @@ public class CassandraDatastoreTest extends DatastoreTestHelper
 		assertThat(dp.getLongValue(), equalTo(123L));
 
 		// Verify the feature works correctly
-		// NOTE: Currently the feature appears not to be fully working, so we test both scenarios
-		if (dp instanceof org.kairosdb.core.datapoints.IngestionTimestampDataPoint)
-		{
-			// Success case: feature is working
-			org.kairosdb.core.datapoints.IngestionTimestampDataPoint timestampedDp =
-				(org.kairosdb.core.datapoints.IngestionTimestampDataPoint) dp;
-			long ingestionTimestamp = timestampedDp.getIngestionTimestamp();
+        assertTrue(dp instanceof org.kairosdb.core.datapoints.IngestionTimestampDataPoint);
 
-			// Ingestion timestamp should be reasonable
-			assertThat("Ingestion timestamp should be after data point time",
-				ingestionTimestamp, greaterThan(dataPointTime - 1000L));
-			assertThat("Ingestion timestamp should not be too far in the future",
-				ingestionTimestamp, org.hamcrest.Matchers.lessThan(System.currentTimeMillis() + 10000L));
-		}
-		else
-		{
-			// Current behavior: feature doesn't return IngestionTimestampDataPoint
-			// This test documents the current state and will fail when the feature is fixed
-			assertThat("Feature should return IngestionTimestampDataPoint when returnIngestionTimestamp=true. " +
-				"If this fails, the feature has been implemented successfully!",
-				dp instanceof org.kairosdb.core.datapoints.IngestionTimestampDataPoint, equalTo(false));
-		}
+        org.kairosdb.core.datapoints.IngestionTimestampDataPoint timestampedDp =
+            (org.kairosdb.core.datapoints.IngestionTimestampDataPoint) dp;
+        long ingestionTimestamp = timestampedDp.getIngestionTimestamp();
+
+        // Ingestion timestamp should be reasonable
+        assertThat("Ingestion timestamp should be after data point time",
+            ingestionTimestamp, greaterThan(dataPointTime - 1000L));
+        assertThat("Ingestion timestamp should not be too far in the future",
+            ingestionTimestamp, org.hamcrest.Matchers.lessThan(System.currentTimeMillis() + 10000L));
 
 		searchResult.close();
 	}

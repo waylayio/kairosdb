@@ -33,6 +33,7 @@ jobs:
         distribution: 'temurin'
     - name: compile and test
       env:
+        CASSANDRA_HOST: localhost
         CLASSPATH: tools/tablesaw-1.2.8.jar
-      run: java make ivy-retrieve;java make clean test-all
+      run: java make ivy-retrieve;java make clean test-all;mvn clean test
 

@@ -18,6 +18,7 @@ package org.kairosdb.core.datastore;
 
 import org.kairosdb.core.DataPoint;
 import org.kairosdb.core.KairosDataPointFactory;
+import org.kairosdb.core.datapoints.IngestionTimestampDataPoint;
 import org.kairosdb.util.BufferedDataInputStream;
 import org.kairosdb.util.BufferedDataOutputStream;
 import org.kairosdb.util.KDataInputStream;
@@ -284,6 +285,7 @@ public class CachedSearchResult implements SearchResult
 		private final String m_dataType;
 		private final Map<String, String> m_tags;
 		private final List<DataPoint> m_dataPoints;
+		private boolean m_hasIngestionTimestamp = false;
 
 		public CachedDatapointWriter(String type, Map<String, String> tags)
 		{
@@ -296,6 +298,10 @@ public class CachedSearchResult implements SearchResult
 		public void addDataPoint(DataPoint datapoint) throws IOException
 		{
 			m_dataPoints.add(datapoint);
+			if (datapoint instanceof IngestionTimestampDataPoint)
+			{
+				m_hasIngestionTimestamp = true;
+			}
 			m_memoryMonitor.checkMemoryAndThrowException();
 		}
 
@@ -313,14 +319,34 @@ public class CachedSearchResult implements SearchResult
 					openCacheFile();
 
 				long curPosition = m_dataOutputStream.getPosition();
-				m_currentFilePositionMarker = new FilePositionMarker(curPosition, m_tags, m_dataType);
+				m_currentFilePositionMarker = new FilePositionMarker(curPosition, m_tags, m_dataType, m_hasIngestionTimestamp);
 				m_dataPointSets.add(m_currentFilePositionMarker);
 
 
 				for (DataPoint dataPoint : m_dataPoints)
 				{
 					m_dataOutputStream.writeLong(dataPoint.getTimestamp());
-					dataPoint.writeValueToBuffer(m_dataOutputStream);
+
+					if (m_hasIngestionTimestamp)
+					{
+						if (dataPoint instanceof IngestionTimestampDataPoint)
+						{
+							m_dataOutputStream.writeBoolean(true); // has ingestion timestamp
+							IngestionTimestampDataPoint itdp = (IngestionTimestampDataPoint) dataPoint;
+							m_dataOutputStream.writeLong(itdp.getIngestionTimestamp());
+							itdp.writeValueToBuffer(m_dataOutputStream);
+						}
+						else
+						{
+							m_dataOutputStream.writeBoolean(false); // no ingestion timestamp
+							dataPoint.writeValueToBuffer(m_dataOutputStream);
+						}
+					}
+					else
+					{
+						// Old format - no per-data-point flags
+						dataPoint.writeValueToBuffer(m_dataOutputStream);
+					}
 
 					m_currentFilePositionMarker.incrementDataPointCount();
 				}
@@ -351,6 +377,7 @@ public class CachedSearchResult implements SearchResult
 		private Map<String, String> m_tags;
 		private String m_dataType;
 		private int m_dataPointCount;
+		private boolean m_hasIngestionTimestamp;
 
 
 		public FilePositionMarker()
@@ -360,14 +387,16 @@ public class CachedSearchResult implements SearchResult
 			m_tags = new HashMap<String, String>();
 			m_dataType = null;
 			m_dataPointCount = 0;
+			m_hasIngestionTimestamp = false;
 		}
 
 		public FilePositionMarker(long startPosition, Map<String, String> tags,
-				String dataType)
+				String dataType, boolean hasIngestionTimestamp)
 		{
 			m_startPosition = startPosition;
 			m_tags = tags;
 			m_dataType = dataType;
+			m_hasIngestionTimestamp = hasIngestionTimestamp;
 		}
 
 		public void setEndPosition(long endPosition)
@@ -394,7 +423,7 @@ public class CachedSearchResult implements SearchResult
 		public CachedDataPointRow iterator()
 		{
 			return (new CachedDataPointRow(m_tags, m_startPosition, m_endPosition,
-					m_dataType, m_dataPointCount));
+					m_dataType, m_dataPointCount, m_hasIngestionTimestamp));
 		}
 
 		@Override
@@ -404,6 +433,7 @@ public class CachedSearchResult implements SearchResult
 			out.writeLong(m_endPosition);
 			out.writeInt(m_dataPointCount);
 			out.writeObject(m_dataType);
+			out.writeBoolean(m_hasIngestionTimestamp);
 			out.writeInt(m_tags.size());
 			for (String s : m_tags.keySet())
 			{
@@ -419,6 +449,7 @@ public class CachedSearchResult implements SearchResult
 			m_endPosition = in.readLong();
 			m_dataPointCount = in.readInt();
 			m_dataType = (String)in.readObject();
+			m_hasIngestionTimestamp = in.readBoolean();
 			//m_dataPointCount = (int)((m_endPosition - m_startPosition) / DATA_POINT_SIZE);
 
 			int tagCount = in.readInt();
@@ -440,10 +471,11 @@ public class CachedSearchResult implements SearchResult
 		private Map<String, String> m_tags;
 		private final String m_dataType;
 		private final int m_dataPointCount;
+		private final boolean m_hasIngestionTimestamp;
 		private int m_dataPointsRead = 0;
 
 		public CachedDataPointRow(Map<String, String> tags,
-				long startPosition, long endPostition, String dataType, int dataPointCount)
+				long startPosition, long endPostition, String dataType, int dataPointCount, boolean hasIngestionTimestamp)
 		{
 			m_currentPosition = startPosition;
 			m_endPostition = endPostition;
@@ -451,6 +483,7 @@ public class CachedSearchResult implements SearchResult
 			m_tags = tags;
 			m_dataType = dataType;
 			m_dataPointCount = dataPointCount;
+			m_hasIngestionTimestamp = hasIngestionTimestamp;
 		}
 
 		private void allocateReadBuffer()
@@ -482,7 +515,24 @@ public class CachedSearchResult implements SearchResult
 
 				long timestamp = m_readBuffer.readLong();
 
-				ret = m_dataPointFactory.createDataPoint(m_dataType, timestamp, m_readBuffer);
+				if (m_hasIngestionTimestamp)
+				{
+					boolean hasIngestionTimestamp = m_readBuffer.readBoolean();
+					if (hasIngestionTimestamp)
+					{
+						long ingestionTimestamp = m_readBuffer.readLong();
+						DataPoint baseDataPoint = m_dataPointFactory.createDataPoint(m_dataType, timestamp, m_readBuffer);
+						ret = new IngestionTimestampDataPoint(baseDataPoint, ingestionTimestamp);
+					}
+					else
+					{
+						ret = m_dataPointFactory.createDataPoint(m_dataType, timestamp, m_readBuffer);
+					}
+				}
+				else
+				{
+					ret = m_dataPointFactory.createDataPoint(m_dataType, timestamp, m_readBuffer);
+				}
 
 			}
 			catch (IOException ioe)
