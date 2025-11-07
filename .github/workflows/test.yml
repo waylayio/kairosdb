@@ -27,11 +27,6 @@ jobs:
         export CLASSPATH=tools/tablesaw-1.2.8.jar
         echo "CLASSPATH=$CLASSPATH" >> $GITHUB_ENV
 
-    - name: Retrieve dependencies
-      run: |
-        export CLASSPATH=tools/tablesaw-1.2.8.jar
-        java make ivy-retrieve
-
     - name: Compile code
       run: |
         export CLASSPATH=tools/tablesaw-1.2.8.jar
