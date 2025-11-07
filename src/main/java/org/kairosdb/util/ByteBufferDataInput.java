@@ -117,6 +117,64 @@ public class ByteBufferDataInput implements KDataInput
 		return DataInputStream.readUTF(this);
 	}
 
+	@Override
+	public String readUTFLong() throws IOException
+	{
+		int savedPosition = m_buffer.position();
+		int totalRemaining = m_buffer.remaining();
+		
+		if (totalRemaining < 2)
+		{
+			throw new IOException("Not enough bytes to read string length");
+		}
+		
+		if (totalRemaining >= 4)
+		{
+			int newLength = readInt();
+			
+			if (newLength >= 0 && newLength <= Integer.MAX_VALUE - 10)
+			{
+				int remainingAfterLength = m_buffer.remaining();
+				if (remainingAfterLength >= newLength)
+				{
+					byte[] bytes = new byte[newLength];
+					readFully(bytes);
+					return new String(bytes, java.nio.charset.StandardCharsets.UTF_8);
+				}
+				m_buffer.position(savedPosition);
+			}
+			else
+			{
+				m_buffer.position(savedPosition);
+			}
+		}
+		
+		m_buffer.position(savedPosition);
+		int oldLength = readUnsignedShort();
+		int remainingAfterLength = m_buffer.remaining();
+		
+		if (oldLength <= 65535 && remainingAfterLength == oldLength)
+		{
+			byte[] bytes = new byte[oldLength];
+			readFully(bytes);
+			return new String(bytes, java.nio.charset.StandardCharsets.UTF_8);
+		}
+		else
+		{
+			m_buffer.position(savedPosition);
+			int newLength = readInt();
+			
+			if (newLength < 0 || newLength > Integer.MAX_VALUE - 10)
+			{
+				throw new IOException("Invalid string length: " + newLength);
+			}
+			
+			byte[] bytes = new byte[newLength];
+			readFully(bytes);
+			return new String(bytes, java.nio.charset.StandardCharsets.UTF_8);
+		}
+	}
+
 	/**
 	 Reads data from internal ByteBuffer and writes them to b.  Returns the number of
 	 bytes read.

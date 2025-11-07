@@ -36,7 +36,7 @@ public class StringDataPointFactory implements DataPointFactory
 	@Override
 	public DataPoint getDataPoint(long timestamp, KDataInput buffer) throws IOException
 	{
-		StringDataPoint ret = new StringDataPoint(timestamp, buffer.readUTF());
+		StringDataPoint ret = new StringDataPoint(timestamp, buffer.readUTFLong());
 		return ret;
 	}
 
