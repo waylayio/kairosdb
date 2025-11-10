@@ -109,7 +109,7 @@ public class SchedulingManagerTest extends RollupTestBase
 	}
 
 	@Test
-	public void testModifiedTasks() throws KairosDBException
+	public void testModifiedTasks() throws KairosDBException, InterruptedException
 	{
 		assignmentStore.setAssignment(TASK1.getId(), SERVER_GUID);
 		assignmentStore.setAssignment(TASK2.getId(), SERVER_GUID);
@@ -118,11 +118,13 @@ public class SchedulingManagerTest extends RollupTestBase
 
 		manager.checkSchedulingChanges();
 
-		// modify task
+		// modify task - ensure time difference for lastModified detection
+		Thread.sleep(10);
 		RollupTask modifiedTask = new RollupTask(TASK2.getId(), TASK2.getName(), TASK2.getExecutionInterval(), TASK2.getRollups(), "{\"id\": " + TASK2.getId() + ",\"name\": \"" + TASK2.getName() + "\", \"execution_interval\": {\"value\": 1, \"unit\": \"hours\"}}");
-		modifiedTask.setLastModified(System.currentTimeMillis() + 10);
 		removeTasks(TASK2);
 		addTasks(modifiedTask);
+		// Set the lastModified time on the ServiceKeyValue to ensure it's different
+		fakeServiceKeyStore.setKeyModificationTime(RollUpTasksStoreImpl.SERVICE, RollUpTasksStoreImpl.SERVICE_KEY_CONFIG, TASK2.getId(), new java.util.Date(System.currentTimeMillis() + 100));
 
 		manager.checkSchedulingChanges();
 
@@ -152,7 +154,7 @@ public class SchedulingManagerTest extends RollupTestBase
 	}
 
 	@Test
-	public void testUnschedulUnassignedTasks() throws KairosDBException
+	public void testUnschedulUnassignedTasks() throws KairosDBException, InterruptedException
 	{
 		assignmentStore.setAssignment(TASK1.getId(), SERVER_GUID);
 		assignmentStore.setAssignment(TASK2.getId(), SERVER_GUID);
@@ -161,6 +163,8 @@ public class SchedulingManagerTest extends RollupTestBase
 
 		manager.checkSchedulingChanges();
 
+		// Ensure time difference for lastModified detection
+		Thread.sleep(10);
 		// Remove assignment task
 		assignmentStore.removeAssignments(ImmutableSet.of(TASK2.getId()));
 

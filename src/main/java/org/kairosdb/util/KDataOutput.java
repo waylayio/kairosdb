@@ -108,4 +108,11 @@ public class KDataOutput implements DataOutput
 	{
 		m_dataOutputStream.writeUTF(s);
 	}
+
+	public void writeUTFLong(String s) throws IOException
+	{
+		byte[] utf8Bytes = s.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+		m_dataOutputStream.writeInt(utf8Bytes.length);
+		m_dataOutputStream.write(utf8Bytes);
+	}
 }

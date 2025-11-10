@@ -22,5 +22,6 @@ public interface KDataInput extends DataInput
 
 	public int read(byte[] b) throws IOException;
 
+	public String readUTFLong() throws IOException;
 
 }
