@@ -1,0 +1,26 @@
+services:
+  cassandra:
+    image: cassandra:3.11
+    container_name: kairosdb-cassandra
+    environment:
+      - CASSANDRA_START_RPC=true
+    ports:
+      - "9042:9042"
+    healthcheck:
+      test: ["CMD", "cqlsh", "--debug"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    volumes:
+      - cassandra-data:/var/lib/cassandra
+    networks:
+      - kairosdb-network
+
+volumes:
+  cassandra-data:
+    driver: local
+
+networks:
+  kairosdb-network:
+    driver: bridge
