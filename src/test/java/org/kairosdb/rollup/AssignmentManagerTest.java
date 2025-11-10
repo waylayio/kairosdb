@@ -163,7 +163,7 @@ public class AssignmentManagerTest extends RollupTestBase
 
     @Test
     public void test_addUnassignedAndRemoveReasignedAndUnassignRemovedTasks()
-            throws RollUpException, DatastoreException
+            throws RollUpException, DatastoreException, InterruptedException
     {
         setupActiveHosts(LOCAL_HOST, "hostname1", "hostname2");
         addTasks(TASK1, TASK2, TASK3);
@@ -172,6 +172,9 @@ public class AssignmentManagerTest extends RollupTestBase
         assignmentStore.setAssignment(TASK3.getId(), "hostname2");
 
         manager.checkAssignmentChanges();
+
+        // Ensure time difference for lastModified detection
+        Thread.sleep(10);
 
         // Remove and Add task
         removeTasks(TASK2);
