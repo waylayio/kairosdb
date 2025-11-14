@@ -7,7 +7,10 @@ import org.kairosdb.core.KairosDataPointFactory;
 import org.kairosdb.core.TestDataPointFactory;
 import org.kairosdb.core.datapoints.LongDataPointFactory;
 import org.kairosdb.core.datapoints.LongDataPointFactoryImpl;
+import org.kairosdb.core.datapoints.StringDataPointFactory;
 import org.kairosdb.events.DataPointEvent;
+
+import java.nio.charset.StandardCharsets;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -39,5 +42,36 @@ public class DataPointEventSerializerTest
 		DataPointEvent processedEvent = serializer.deserializeEvent(bytes);
 
 		assertThat(original, equalTo(processedEvent));
+	}
+
+	@Test
+	public void test_serializeDeserialize_largeString() throws Exception
+	{
+		KairosDataPointFactory dataPointFactory = new TestDataPointFactory();
+		DataPointEventSerializer serializer = new DataPointEventSerializer(dataPointFactory);
+		StringDataPointFactory stringFactory = new StringDataPointFactory();
+
+		StringBuilder sb = new StringBuilder();
+		for (int i = 0; i < 100000; i++)
+		{
+			sb.append('T');
+		}
+		String largeString = sb.toString();
+		assertThat(largeString.getBytes(StandardCharsets.UTF_8).length, equalTo(100000));
+
+		ImmutableSortedMap<String, String> tags =
+				ImmutableSortedMap.<String, String>naturalOrder()
+						.put("host", "test")
+						.put("size", "100000").build();
+
+		DataPoint dataPoint = stringFactory.createDataPoint(123L, largeString);
+		DataPointEvent original = new DataPointEvent("test.large.string", tags, dataPoint, 500);
+
+		byte[] bytes = serializer.serializeEvent(original);
+
+		DataPointEvent processedEvent = serializer.deserializeEvent(bytes);
+
+		assertThat(original, equalTo(processedEvent));
+		assertThat(processedEvent.getDataPoint().getDataStoreDataType(), equalTo("kairos_string"));
 	}
 }

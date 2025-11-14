@@ -1,13 +1,11 @@
 package org.kairosdb.core.queue;
 
 import com.google.common.collect.ImmutableSortedMap;
-import com.google.common.io.ByteArrayDataInput;
-import com.google.common.io.ByteArrayDataOutput;
-import com.google.common.io.ByteStreams;
 import org.kairosdb.core.DataPoint;
 import org.kairosdb.core.KairosDataPointFactory;
 import org.kairosdb.events.DataPointEvent;
 import org.kairosdb.util.KDataInput;
+import org.kairosdb.util.KDataOutput;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,29 +30,36 @@ public class DataPointEventSerializer
 
 	public byte[] serializeEvent(DataPointEvent dataPointEvent)
 	{
-		//Todo: Create some adaptive value here, keep stats on if the buffer increases and slowely increase it
-		ByteArrayDataOutput dataOutput = ByteStreams.newDataOutput(64);
-		dataOutput.writeUTF(dataPointEvent.getMetricName());
-		dataOutput.writeInt(dataPointEvent.getTtl());
-		dataOutput.writeLong(dataPointEvent.getDataPoint().getTimestamp());
-		dataOutput.writeUTF(dataPointEvent.getDataPoint().getDataStoreDataType());
+		KDataOutput dataOutput = new KDataOutput();
 		try
 		{
-			dataPointEvent.getDataPoint().writeValueToBuffer(dataOutput);
+			dataOutput.writeUTF(dataPointEvent.getMetricName());
+			dataOutput.writeInt(dataPointEvent.getTtl());
+			dataOutput.writeLong(dataPointEvent.getDataPoint().getTimestamp());
+			dataOutput.writeUTF(dataPointEvent.getDataPoint().getDataStoreDataType());
+			try
+			{
+				dataPointEvent.getDataPoint().writeValueToBuffer(dataOutput);
+			}
+			catch (IOException e)
+			{
+				logger.error("Error serializing DataPoint", e);
+			}
+
+			dataOutput.writeInt(dataPointEvent.getTags().size());
+			for (Map.Entry<String, String> entry : dataPointEvent.getTags().entrySet())
+			{
+				dataOutput.writeUTF(entry.getKey());
+				dataOutput.writeUTF(entry.getValue());
+			}
+
+			return dataOutput.getBytes();
 		}
 		catch (IOException e)
 		{
-			logger.error("Error serializing DataPoint", e);
+			logger.error("Error serializing event", e);
+			return new byte[0];
 		}
-
-		dataOutput.writeInt(dataPointEvent.getTags().size());
-		for (Map.Entry<String, String> entry : dataPointEvent.getTags().entrySet())
-		{
-			dataOutput.writeUTF(entry.getKey());
-			dataOutput.writeUTF(entry.getValue());
-		}
-
-		return dataOutput.toByteArray();
 	}
 
 	DataPointEvent deserializeEvent(byte[] bytes)
