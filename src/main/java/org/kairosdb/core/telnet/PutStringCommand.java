@@ -1,7 +1,7 @@
 package org.kairosdb.core.telnet;
 
 import com.google.inject.Inject;
-import org.jboss.netty.channel.Channel;
+import io.netty.channel.Channel;
 import org.kairosdb.core.DataPoint;
 import org.kairosdb.core.DataPointSet;
 import org.kairosdb.core.datapoints.DoubleDataPointFactory;

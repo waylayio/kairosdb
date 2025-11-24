@@ -16,21 +16,14 @@
 
 package org.kairosdb.core.telnet;
 
-import com.google.common.base.CharMatcher;
-import com.google.common.base.Splitter;
-import org.jboss.netty.buffer.ChannelBuffer;
-import org.jboss.netty.channel.Channel;
-import org.jboss.netty.channel.ChannelHandlerContext;
-import org.jboss.netty.handler.codec.oneone.OneToOneDecoder;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.handler.codec.MessageToMessageDecoder;
 
-import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
 
-public class WordSplitter extends OneToOneDecoder
+public class WordSplitter extends MessageToMessageDecoder<String>
 {
-	private static final Charset CHARSET = Charset.forName("ISO-8859-1");
-
 	/**
 	 Constructor.
 	 */
@@ -39,11 +32,11 @@ public class WordSplitter extends OneToOneDecoder
 	}
 
 	@Override
-	protected Object decode(final ChannelHandlerContext ctx,
-	                        final Channel channel,
-	                        final Object msg) throws Exception
+	protected void decode(final ChannelHandlerContext ctx,
+	                        final String msg,
+	                        final List<Object> out) throws Exception
 	{
-		return splitString(((ChannelBuffer) msg).toString(CHARSET));
+		out.add(splitString(msg));
 	}
 
 

@@ -66,6 +66,8 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.sql.Connection;
+import java.sql.DatabaseMetaData;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Timestamp;
@@ -135,6 +137,8 @@ public class H2Datastore implements Datastore, ServiceKeyStore
 		{
 			if (createDB)
 				createDatabase(ds);
+			else
+				migrateDatabase(ds);
 		}
 		catch (SQLException e)
 		{
@@ -173,6 +177,35 @@ public class H2Datastore implements Datastore, ServiceKeyStore
 			s.execute(command);
 
 		m_holdConnection.commit();
+	}
+
+	private void migrateDatabase(DataSource ds) throws SQLException
+	{
+		try (Connection conn = ds.getConnection())
+		{
+			DatabaseMetaData metaData = conn.getMetaData();
+			try (ResultSet columns = metaData.getColumns(null, null, "DATA_POINT", "VALUE"))
+			{
+				if (columns.next())
+				{
+					String typeName = columns.getString("TYPE_NAME");
+					if ("BINARY".equals(typeName))
+					{
+						logger.info("Migrating data_point.value column from BINARY to VARBINARY for H2 2.x compatibility");
+						try (Statement stmt = conn.createStatement())
+						{
+							stmt.execute("ALTER TABLE data_point ALTER COLUMN \"value\" VARBINARY");
+							logger.info("Migration completed successfully");
+						}
+						catch (SQLException e)
+						{
+							// Migration failure is not fatal - new databases will use VARBINARY
+							logger.warn("Migration failed, but continuing. Error: " + e.getMessage());
+						}
+					}
+				}
+			}
+		}
 	}
 
 	@Override
