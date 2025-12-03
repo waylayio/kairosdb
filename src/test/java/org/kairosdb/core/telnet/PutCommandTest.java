@@ -15,11 +15,10 @@
  */
 package org.kairosdb.core.telnet;
 
-import org.jboss.netty.channel.Channel;
-import org.jboss.netty.channel.ChannelConfig;
-import org.jboss.netty.channel.ChannelFactory;
-import org.jboss.netty.channel.ChannelFuture;
-import org.jboss.netty.channel.ChannelPipeline;
+import io.netty.buffer.ByteBufAllocator;
+import io.netty.channel.*;
+import io.netty.util.Attribute;
+import io.netty.util.AttributeKey;
 import org.junit.Before;
 import org.junit.Test;
 import org.kairosdb.core.DataPoint;
@@ -169,31 +168,25 @@ public class PutCommandTest
 	public static class FakeChannel implements Channel
 	{
 		@Override
-		public Integer getId()
+		public ChannelId id()
 		{
 			return null;
 		}
 
 		@Override
-		public ChannelFactory getFactory()
+		public EventLoop eventLoop()
 		{
 			return null;
 		}
 
 		@Override
-		public Channel getParent()
+		public Channel parent()
 		{
 			return null;
 		}
 
 		@Override
-		public ChannelConfig getConfig()
-		{
-			return null;
-		}
-
-		@Override
-		public ChannelPipeline getPipeline()
+		public ChannelConfig config()
 		{
 			return null;
 		}
@@ -205,49 +198,103 @@ public class PutCommandTest
 		}
 
 		@Override
-		public boolean isBound()
+		public boolean isRegistered()
 		{
 			return false;
 		}
 
 		@Override
-		public boolean isConnected()
+		public boolean isActive()
 		{
 			return false;
 		}
 
 		@Override
-		public SocketAddress getLocalAddress()
+		public ChannelMetadata metadata()
 		{
 			return null;
 		}
 
 		@Override
-		public SocketAddress getRemoteAddress()
+		public SocketAddress localAddress()
 		{
 			return null;
 		}
 
 		@Override
-		public ChannelFuture write(Object o)
+		public SocketAddress remoteAddress()
 		{
 			return null;
 		}
 
 		@Override
-		public ChannelFuture write(Object o, SocketAddress socketAddress)
+		public ChannelFuture closeFuture()
 		{
 			return null;
 		}
 
 		@Override
-		public ChannelFuture bind(SocketAddress socketAddress)
+		public boolean isWritable()
+		{
+			return false;
+		}
+
+		@Override
+		public long bytesBeforeUnwritable()
+		{
+			return 0;
+		}
+
+		@Override
+		public long bytesBeforeWritable()
+		{
+			return 0;
+		}
+
+		@Override
+		public Unsafe unsafe()
 		{
 			return null;
 		}
 
 		@Override
-		public ChannelFuture connect(SocketAddress socketAddress)
+		public ChannelPipeline pipeline()
+		{
+			return null;
+		}
+
+		@Override
+		public ByteBufAllocator alloc()
+		{
+			return null;
+		}
+
+		@Override
+		public Channel read()
+		{
+			return this;
+		}
+
+		@Override
+		public Channel flush()
+		{
+			return this;
+		}
+
+		@Override
+		public ChannelFuture bind(SocketAddress localAddress)
+		{
+			return null;
+		}
+
+		@Override
+		public ChannelFuture connect(SocketAddress remoteAddress)
+		{
+			return null;
+		}
+
+		@Override
+		public ChannelFuture connect(SocketAddress remoteAddress, SocketAddress localAddress)
 		{
 			return null;
 		}
@@ -259,74 +306,117 @@ public class PutCommandTest
 		}
 
 		@Override
-		public ChannelFuture unbind()
-		{
-			return null;
-		}
-
-		@Override
 		public ChannelFuture close()
 		{
 			return null;
 		}
 
 		@Override
-		public ChannelFuture getCloseFuture()
+		public ChannelFuture deregister()
 		{
 			return null;
 		}
 
 		@Override
-		public int getInterestOps()
+		public ChannelFuture bind(SocketAddress localAddress, ChannelPromise promise)
 		{
-			return 0;
+			return null;
 		}
 
 		@Override
-		public boolean isReadable()
+		public ChannelFuture connect(SocketAddress remoteAddress, ChannelPromise promise)
+		{
+			return null;
+		}
+
+		@Override
+		public ChannelFuture connect(SocketAddress remoteAddress, SocketAddress localAddress, ChannelPromise promise)
+		{
+			return null;
+		}
+
+		@Override
+		public ChannelFuture disconnect(ChannelPromise promise)
+		{
+			return null;
+		}
+
+		@Override
+		public ChannelFuture close(ChannelPromise promise)
+		{
+			return null;
+		}
+
+		@Override
+		public ChannelFuture deregister(ChannelPromise promise)
+		{
+			return null;
+		}
+
+		@Override
+		public ChannelFuture write(Object msg)
+		{
+			return null;
+		}
+
+		@Override
+		public ChannelFuture write(Object msg, ChannelPromise promise)
+		{
+			return null;
+		}
+
+		@Override
+		public ChannelFuture writeAndFlush(Object msg)
+		{
+			return null;
+		}
+
+		@Override
+		public ChannelFuture writeAndFlush(Object msg, ChannelPromise promise)
+		{
+			return null;
+		}
+
+		@Override
+		public ChannelPromise newPromise()
+		{
+			return null;
+		}
+
+		@Override
+		public ChannelProgressivePromise newProgressivePromise()
+		{
+			return null;
+		}
+
+		@Override
+		public ChannelFuture newSucceededFuture()
+		{
+			return null;
+		}
+
+		@Override
+		public ChannelFuture newFailedFuture(Throwable cause)
+		{
+			return null;
+		}
+
+		@Override
+		public ChannelPromise voidPromise()
+		{
+			return null;
+		}
+
+		@Override
+		public <T> Attribute<T> attr(AttributeKey<T> key)
+		{
+			return null;
+		}
+
+		@Override
+		public <T> boolean hasAttr(AttributeKey<T> key)
 		{
 			return false;
-		}
-
-		@Override
-		public boolean isWritable()
-		{
-			return false;
-		}
-
-		@Override
-		public ChannelFuture setInterestOps(int i)
-		{
-			return null;
-		}
-
-		@Override
-		public ChannelFuture setReadable(boolean b)
-		{
-			return null;
-		}
-
-		@Override
-		public boolean getUserDefinedWritability(int index)
-		{
-			return false;
-		}
-
-		@Override
-		public void setUserDefinedWritability(int index, boolean isWritable)
-		{
-
-		}
-
-		@Override
-		public Object getAttachment()
-		{
-			return null;
-		}
-
-		@Override
-		public void setAttachment(Object o)
-		{
 		}
 
 		@Override

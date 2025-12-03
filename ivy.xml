@@ -10,15 +10,15 @@
 		<conf name="build_tools"/>
 	</configurations>
 	<dependencies>
-		<dependency org="com.google.guava" name="guava" rev="28.2-jre" force="true">
+		<dependency org="com.google.guava" name="guava" rev="32.1.3-jre" force="true">
 			<artifact name="guava" type="bundle" ext="jar"/>
 		</dependency>
 
 		<dependency org="com.github.rholder" name="guava-retrying" rev="2.0.0" />
-		<dependency org="org.apache.commons" name="commons-lang3" rev="3.4" />
+		<dependency org="org.apache.commons" name="commons-lang3" rev="3.18.0" />
 		<dependency org="org.apache.commons" name="commons-collections4" rev="4.1" />
 
-		<dependency org="org.json" name="json" rev="20180130" />
+		<dependency org="org.json" name="json" rev="20231013" />
 		<dependency org="com.google.code.gson" name="gson" rev="2.2.4" />
 		<dependency org="junit" name="junit" rev="4.13.1" conf="test->default" />
 
@@ -31,32 +31,32 @@
 		<dependency org="org.assertj" name="assertj-guava" rev="3.3.0"
 		            conf="test->default"/>
 
-		<dependency org="io.netty" name="netty" rev="3.10.6.Final" />
+		<dependency org="io.netty" name="netty-all" rev="4.1.44.Final" />
 
 		<dependency org="com.google.inject" name="guice" rev="4.2.2" />
 		<dependency org="com.google.inject.extensions"
 		            name="guice-multibindings" rev="4.2.2"/>
 		<dependency org="com.google.inject.extensions" name="guice-assistedinject" rev="4.2.2" />
 		<dependency org="com.google.inject.extensions" name="guice-servlet" rev="4.2.2" />
-		<dependency org="com.h2database" name="h2" rev="1.4.200" />
+		<dependency org="com.h2database" name="h2" rev="2.2.220" />
 		<dependency org="org.kairosdb" name="bigqueue" rev="1.0.1" />
 
 		<dependency org="com.typesafe" name="config" rev="1.4.0" />
 
-		<dependency org="org.xerial.snappy" name="snappy-java" rev="1.1.7.2"/>
+		<dependency org="org.xerial.snappy" name="snappy-java" rev="1.1.10.4"/>
 
 		<!-- provides connection pooling -->
 		<dependency org="com.mchange" name="c3p0" rev="0.9.5.5"/>
-		<dependency org="org.slf4j" name="slf4j-api" rev="1.7.2" />
-		<dependency org="org.slf4j" name="jul-to-slf4j" rev="1.7.2" />
+		<dependency org="org.slf4j" name="slf4j-api" rev="2.0.9" />
+		<dependency org="org.slf4j" name="jul-to-slf4j" rev="2.0.9" />
 		<dependency org="org.apache.commons" name="commons-math3" rev="3.2" />
 		<dependency org="commons-io" name="commons-io" rev="2.7" />
 		<dependency org="com.beust" name="jcommander" rev="1.35" />
 		<dependency org="org.apache.httpcomponents" name="httpclient" rev="4.5.13" />
 		<dependency org="joda-time" name="joda-time" rev="2.10.6" />
 
-		<dependency org="ch.qos.logback" name="logback-core" rev="1.2.3" />
-		<dependency org="ch.qos.logback" name="logback-classic" rev="1.2.3" />
+		<dependency org="ch.qos.logback" name="logback-core" rev="1.3.16" />
+		<dependency org="ch.qos.logback" name="logback-classic" rev="1.3.16" />
 
 		<!--Genormous dependencies-->
 		<dependency org="org.agileclick.genorm" name="genormous" rev="1.6.5.jdbc41" conf="default,build_tools->default">
@@ -130,6 +130,6 @@
 		<dependency org="org.gaul" name="modernizer-maven-plugin" rev="2.0.0" conf="build_tools->default" />
 
 
-		<conflict org="com.google.guava" module="guava" rev="28.2-jre"/>
+		<conflict org="com.google.guava" module="guava" rev="32.1.3-jre"/>
 	</dependencies>
 </ivy-module>

@@ -18,7 +18,7 @@ package org.kairosdb.core.telnet;
 
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
-import org.jboss.netty.channel.Channel;
+import io.netty.channel.Channel;
 import org.kairosdb.core.DataPointSet;
 import org.kairosdb.core.datapoints.LongDataPointFactory;
 import org.kairosdb.core.exception.DatastoreException;
@@ -48,11 +48,11 @@ public class VersionCommand implements TelnetCommand, KairosMetricReporter
 	public void execute(Channel chan, List<String> command) throws DatastoreException
 	{
 		m_counter.incrementAndGet();
-		if (chan.isConnected())
+		if (chan.isActive())
 		{
 			Package thisPackage = getClass().getPackage();
 			String versionString = thisPackage.getImplementationTitle()+" "+thisPackage.getImplementationVersion();
-			chan.write(versionString+"\n");
+			chan.writeAndFlush(versionString+"\n");
 		}
 	}
 
