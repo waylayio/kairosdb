@@ -89,7 +89,7 @@ public class PutCommandTest
 		}
 		catch (ValidationException e)
 		{
-			assertThat(e.getMessage(), equalTo("metricName may not be empty."));
+			assertThat(e.getMessage(), equalTo("metricName must not be empty."));
 		}
 	}
 
@@ -113,7 +113,7 @@ public class PutCommandTest
 		}
 		catch (ValidationException e)
 		{
-			assertThat(e.getMessage(), equalTo("tag[1].name may not be empty."));
+			assertThat(e.getMessage(), equalTo("tag[1].name must not be empty."));
 		}
 	}
 

@@ -104,7 +104,7 @@ public class MetricsResourceTest extends ResourceBase
 
 		JsonResponse response = client.post(json, ADD_METRIC_URL);
 
-		assertResponse(response, 400, "{\"errors\":[\"metric[0].name may not be empty.\"]}");
+		assertResponse(response, 400, "{\"errors\":[\"metric[0].name must not be empty.\"]}");
 	}
 
 	@Test

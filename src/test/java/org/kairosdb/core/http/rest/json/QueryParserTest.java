@@ -258,7 +258,7 @@ public class QueryParserTest
 	{
 		String json = Resources.toString(Resources.getResource("invalid-query-metric-empty-name.json"), Charsets.UTF_8);
 
-		assertBeanValidation(json, "query.metric[0].name may not be empty");
+		assertBeanValidation(json, "query.metric[0].name must not be empty");
 	}
 
 	@Test
@@ -427,7 +427,7 @@ public class QueryParserTest
 	{
 		String json = Resources.toString(Resources.getResource("invalid-query-metric-group_by-tag-missing-tags.json"), Charsets.UTF_8);
 
-		assertBeanValidation(json, "query.metric[0].group_by[0].tags may not be null");
+		assertBeanValidation(json, "query.metric[0].group_by[0].tags may not be null", "query.metric[0].group_by[0].tags must not be empty");
 	}
 
 	@Test
@@ -435,7 +435,7 @@ public class QueryParserTest
 	{
 		String json = Resources.toString(Resources.getResource("invalid-query-metric-group_by-tag-empty-tags.json"), Charsets.UTF_8);
 
-		assertBeanValidation(json, "query.metric[0].group_by[0].tags may not be empty");
+		assertBeanValidation(json, "query.metric[0].group_by[0].tags must not be empty");
 	}
 
 	@Test
@@ -483,7 +483,7 @@ public class QueryParserTest
 	{
 		String json = Resources.toString(Resources.getResource("invalid-rollup-no-name-empty.json"), Charsets.UTF_8);
 
-		assertRollupBeanValidation(json, "name may not be empty");
+		assertRollupBeanValidation(json, "name must not be empty");
 	}
 
 	@Test
@@ -499,7 +499,7 @@ public class QueryParserTest
 	{
 		String json = Resources.toString(Resources.getResource("invalid-rollup-no-saveAs.json"), Charsets.UTF_8);
 
-		assertRollupBeanValidation(json, "rollup[0].saveAs may not be empty");
+		assertRollupBeanValidation(json, "rollup[0].saveAs must not be empty");
 	}
 
 	/**
@@ -632,6 +632,27 @@ public class QueryParserTest
 		{
 			assertThat(e.getErrorMessages().size(), equalTo(1));
 			assertThat(e.getErrorMessages().get(0), equalTo(expectedMessage));
+		}
+	}
+
+	private void assertBeanValidation(String json, String... expectedMessages)
+	{
+		try
+		{
+			parser.parseQueryMetric(json);
+			fail("Expected BeanValidationException");
+		}
+		catch (QueryException e)
+		{
+			fail("Expected BeanValidationException");
+		}
+		catch (BeanValidationException e)
+		{
+			assertThat(e.getErrorMessages().size(), equalTo(expectedMessages.length));
+			for (String expectedMessage : expectedMessages)
+			{
+				assertThat(e.getErrorMessages(), hasItem(expectedMessage));
+			}
 		}
 	}
 

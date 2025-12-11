@@ -1,7 +1,7 @@
 package org.kairosdb.rollup;
 
 import com.google.gson.annotations.SerializedName;
-import org.apache.bval.constraints.NotEmpty;
+import javax.validation.constraints.NotEmpty;
 import org.kairosdb.core.datastore.Duration;
 
 import javax.validation.constraints.NotNull;
@@ -27,7 +27,7 @@ public class RollupTask
 	private final transient List<Rollup> rollups = new ArrayList<>();
 
 	@NotNull
-	@NotEmpty()
+	@NotEmpty
 	private String name;
 
 	@NotNull

@@ -26,8 +26,8 @@ import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonToken;
 import com.google.gson.stream.JsonWriter;
 import com.google.inject.Inject;
-import org.apache.bval.constraints.NotEmpty;
-import org.apache.bval.jsr303.ApacheValidationProvider;
+import javax.validation.constraints.NotEmpty;
+import org.apache.bval.jsr.ApacheValidationProvider;
 import org.joda.time.DateTimeZone;
 import org.kairosdb.core.aggregator.*;
 import org.kairosdb.core.annotation.Feature;
@@ -544,7 +544,7 @@ public class QueryParser
 	private static class Metric
 	{
 		@NotNull
-		@NotEmpty()
+		@NotEmpty
 		@SerializedName("name")
 		private String name;
 
@@ -910,6 +910,24 @@ public class QueryParser
 
 		@Override
 		public ConstraintDescriptor<?> getConstraintDescriptor()
+		{
+			return null;
+		}
+
+		@Override
+		public Object[] getExecutableParameters()
+		{
+			return null;
+		}
+
+		@Override
+		public Object getExecutableReturnValue()
+		{
+			return null;
+		}
+
+		@Override
+		public <U> U unwrap(Class<U> type)
 		{
 			return null;
 		}

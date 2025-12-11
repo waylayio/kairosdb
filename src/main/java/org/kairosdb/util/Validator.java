@@ -45,12 +45,12 @@ public class Validator
 	{
 		if (value == null)
 		{
-			validationErrors.addErrorMessage(name + " may not be null.");
+			validationErrors.addErrorMessage(name + " must not be null.");
 			return false;
 		}
 		if (value.isEmpty())
 		{
-			validationErrors.addErrorMessage(name + " may not be empty.");
+			validationErrors.addErrorMessage(name + " must not be empty.");
 			return false;
 		}
 
@@ -61,7 +61,7 @@ public class Validator
 	{
 		if (value == null)
 		{
-			validationErrors.addErrorMessage(name + " may not be null.");
+			validationErrors.addErrorMessage(name + " must not be null.");
 			return false;
 		}
 		return true;
@@ -71,22 +71,22 @@ public class Validator
 	{
 		if (value == null)
 		{
-			validationErrors.addErrorMessage(name + " may not be null.");
+			validationErrors.addErrorMessage(name + " must not be null.");
 			return false;
 		}
 		if (value.isJsonNull())
 		{
-			validationErrors.addErrorMessage(name + " may not be empty.");
+			validationErrors.addErrorMessage(name + " must not be empty.");
 			return false;
 		}
 		if (value.isJsonArray() && value.getAsJsonArray().size() < 1)
 		{
-			validationErrors.addErrorMessage(name + " may not be an empty array.");
+			validationErrors.addErrorMessage(name + " must not be an empty array.");
 			return false;
 		}
 		if (!value.isJsonObject() && value.getAsString().isEmpty())
 		{
-			validationErrors.addErrorMessage(name + " may not be empty.");
+			validationErrors.addErrorMessage(name + " must not be empty.");
 			return false;
 		}
 

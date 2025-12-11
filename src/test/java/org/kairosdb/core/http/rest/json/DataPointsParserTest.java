@@ -91,7 +91,7 @@ public class DataPointsParserTest
 		ValidationErrors validationErrors = parser.parse();
 
 		assertThat(validationErrors.size(), equalTo(1));
-		assertThat(validationErrors.getFirstError(), equalTo("metric[1].name may not be null."));
+		assertThat(validationErrors.getFirstError(), equalTo("metric[1].name must not be null."));
 	}
 
 	@Test
@@ -105,7 +105,7 @@ public class DataPointsParserTest
 		ValidationErrors validationErrors = parser.parse();
 
 		assertThat(validationErrors.size(), equalTo(1));
-		assertThat(validationErrors.getFirstError(), equalTo("metric[0](name=metric1).value may not be null."));
+		assertThat(validationErrors.getFirstError(), equalTo("metric[0](name=metric1).value must not be null."));
 	}
 
 	@Test
@@ -119,7 +119,7 @@ public class DataPointsParserTest
 		ValidationErrors validationErrors = parser.parse();
 
 		assertThat(validationErrors.size(), equalTo(1));
-		assertThat(validationErrors.getFirstError(), equalTo("metric[0](name=metric1).timestamp may not be null."));
+		assertThat(validationErrors.getFirstError(), equalTo("metric[0](name=metric1).timestamp must not be null."));
 	}
 
 	@Test
@@ -175,7 +175,7 @@ public class DataPointsParserTest
 		ValidationErrors validationErrors = parser.parse();
 
 		assertThat(validationErrors.size(), equalTo(1));
-		assertThat(validationErrors.getFirstError(), equalTo("metric[0](name=metric1).datapoints[0].value may not be empty."));
+		assertThat(validationErrors.getFirstError(), equalTo("metric[0](name=metric1).datapoints[0].value must not be empty."));
 	}
 
 	@Test
@@ -189,7 +189,7 @@ public class DataPointsParserTest
 		ValidationErrors validationErrors = parser.parse();
 
 		assertThat(validationErrors.size(), equalTo(1));
-		assertThat(validationErrors.getFirstError(), equalTo("metric[0](name=metric1).datapoints[0].timestamp may not be null."));
+		assertThat(validationErrors.getFirstError(), equalTo("metric[0](name=metric1).datapoints[0].timestamp must not be null."));
 	}
 
 	@Test
@@ -203,7 +203,7 @@ public class DataPointsParserTest
 		ValidationErrors validationErrors = parser.parse();
 
 		assertThat(validationErrors.size(), equalTo(1));
-		assertThat(validationErrors.getFirstError(), equalTo("metric[0].name may not be empty."));
+		assertThat(validationErrors.getFirstError(), equalTo("metric[0].name must not be empty."));
 	}
 
 	@Test
@@ -273,7 +273,7 @@ public class DataPointsParserTest
 		ValidationErrors validationErrors = parser.parse();
 
 		assertThat(validationErrors.size(), equalTo(1));
-		assertThat(validationErrors.getFirstError(), equalTo("metric[0](name=metricName).tag[0].name may not be empty."));
+		assertThat(validationErrors.getFirstError(), equalTo("metric[0](name=metricName).tag[0].name must not be empty."));
 		assertThat(parser.getDataPointCount(), equalTo(0));
 	}
 
@@ -301,7 +301,7 @@ public class DataPointsParserTest
 		ValidationErrors validationErrors = parser.parse();
 
 		assertThat(validationErrors.size(), equalTo(1));
-		assertThat(validationErrors.getFirstError(), equalTo("metric[0](name=metricName).tag[foo].value may not be empty."));
+		assertThat(validationErrors.getFirstError(), equalTo("metric[0](name=metricName).tag[foo].value must not be empty."));
 	}
 
 	@Test
@@ -328,8 +328,8 @@ public class DataPointsParserTest
 		ValidationErrors validationErrors = parser.parse();
 
 		assertThat(validationErrors.size(), equalTo(2));
-		assertThat(validationErrors.getErrors(), hasItem("metric[0](name=metricName).tag[name].value may not be empty."));
-		assertThat(validationErrors.getErrors(), hasItem("metric[0](name=metricName).value may not be empty."));
+		assertThat(validationErrors.getErrors(), hasItem("metric[0](name=metricName).tag[name].value must not be empty."));
+		assertThat(validationErrors.getErrors(), hasItem("metric[0](name=metricName).value must not be empty."));
 	}
 
 	/**
