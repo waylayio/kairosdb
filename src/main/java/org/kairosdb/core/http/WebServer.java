@@ -23,6 +23,7 @@ import com.google.inject.name.Named;
 import com.google.inject.servlet.GuiceFilter;
 import org.eclipse.jetty.jaas.JAASLoginService;
 import org.eclipse.jetty.security.*;
+import org.eclipse.jetty.security.authentication.BasicAuthenticator;
 import org.eclipse.jetty.server.*;
 import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.server.handler.ErrorHandler;
@@ -330,6 +331,7 @@ public class WebServer implements KairosDBService
 		csh.addConstraintMapping(healthcheckConstraintMapping);
 		csh.addConstraintMapping(cm);
 		csh.setLoginService(l);
+		csh.setAuthenticator(new BasicAuthenticator());
 		l.start();
 		return csh;
     }
