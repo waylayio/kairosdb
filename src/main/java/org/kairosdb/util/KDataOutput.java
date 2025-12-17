@@ -8,7 +8,7 @@ import java.io.IOException;
 /**
  Created by bhawkins on 12/10/13.
  */
-public class KDataOutput implements DataOutput
+public class KDataOutput implements DataOutput, LongUTFWriter
 {
 	private ByteArrayOutputStream m_arrayOutputStream;
 	private DataOutputStream m_dataOutputStream;
@@ -109,9 +109,14 @@ public class KDataOutput implements DataOutput
 		m_dataOutputStream.writeUTF(s);
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
 	public void writeUTFLong(String s) throws IOException
 	{
 		byte[] utf8Bytes = s.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+		m_dataOutputStream.writeShort(0xFFFF);
 		m_dataOutputStream.writeInt(utf8Bytes.length);
 		m_dataOutputStream.write(utf8Bytes);
 	}

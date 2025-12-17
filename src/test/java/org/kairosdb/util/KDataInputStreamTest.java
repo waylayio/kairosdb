@@ -138,8 +138,9 @@ public class KDataInputStreamTest
 	@Test
 	public void test_readUTFLong_backwardCompatibility_oldFormat_maxSize() throws IOException
 	{
+		// Use 65534 instead of 65535 to avoid collision with 0xFFFF marker
 		StringBuilder sb = new StringBuilder();
-		for (int i = 0; i < 65535; i++)
+		for (int i = 0; i < 65534; i++)
 		{
 			sb.append('A');
 		}
@@ -153,7 +154,7 @@ public class KDataInputStreamTest
 				new ByteArrayInputStream(baos.toByteArray()));
 		String result = input.readUTFLong();
 		assertEquals(testString, result);
-		assertEquals(65535, result.getBytes(StandardCharsets.UTF_8).length);
+		assertEquals(65534, result.getBytes(StandardCharsets.UTF_8).length);
 	}
 
 	@Test
@@ -204,6 +205,39 @@ public class KDataInputStreamTest
 				new ByteArrayInputStream(combined));
 		assertEquals("Old format string", input.readUTFLong());
 		assertEquals("New format string", input.readUTFLong());
+	}
+
+	@Test
+	public void test_readUTFLong_legacyFormat_smallString() throws IOException
+	{
+		// Simulates legacy format from commit 0866c3fe (4-byte length, no marker)
+		// This should be detected via the 0x0000 high bytes in the length
+		String testString = "Legacy format test";
+		byte[] utf8Bytes = testString.getBytes(StandardCharsets.UTF_8);
+
+		java.io.ByteArrayOutputStream baos = new java.io.ByteArrayOutputStream();
+		DataOutputStream dos = new DataOutputStream(baos);
+		dos.writeInt(utf8Bytes.length);  // 4-byte length (no marker)
+		dos.write(utf8Bytes);
+
+		KDataInputStream input = new KDataInputStream(
+				new ByteArrayInputStream(baos.toByteArray()));
+		String result = input.readUTFLong();
+		assertEquals(testString, result);
+	}
+
+	@Test
+	public void test_readUTFLong_legacyFormat_emptyString() throws IOException
+	{
+		// Legacy format with empty string
+		java.io.ByteArrayOutputStream baos = new java.io.ByteArrayOutputStream();
+		DataOutputStream dos = new DataOutputStream(baos);
+		dos.writeInt(0);  // 4-byte length = 0
+
+		KDataInputStream input = new KDataInputStream(
+				new ByteArrayInputStream(baos.toByteArray()));
+		String result = input.readUTFLong();
+		assertEquals("", result);
 	}
 }
 

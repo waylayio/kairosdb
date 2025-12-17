@@ -15,74 +15,50 @@ public class KDataInputStream extends DataInputStream implements KDataInput
 		super(in);
 	}
 
+	/**
+	 * Reads a string in one of three formats for backward compatibility:
+	 * <ul>
+	 *   <li>New format: 0xFFFF marker + 4-byte length + raw UTF-8</li>
+	 *   <li>Legacy format: 4-byte length (starting with 0x0000) + raw UTF-8</li>
+	 *   <li>Old format: 2-byte length + UTF-8 bytes</li>
+	 * </ul>
+	 */
 	@Override
 	public String readUTFLong() throws IOException
 	{
-		mark(65537);
+		int firstTwoBytes = readUnsignedShort();
 		
-		try
+		if (firstTwoBytes == 0xFFFF)
 		{
-			int newLength = readInt();
-			
-			if (newLength < 0 || newLength > Integer.MAX_VALUE - 10)
+			// New format: 0xFFFF marker + 4-byte length + raw UTF-8
+			int length = readInt();
+			if (length < 0)
 			{
-				reset();
-				int oldLength = readUnsignedShort();
-				if (oldLength <= 65535)
-				{
-					byte[] bytes = new byte[oldLength];
-					readFully(bytes);
-					return new String(bytes, java.nio.charset.StandardCharsets.UTF_8);
-				}
-				throw new IOException("Invalid string length: " + newLength);
+				throw new IOException("Invalid string length: " + length);
 			}
-			
-			try
-			{
-				byte[] bytes = new byte[newLength];
-				readFully(bytes);
-				return new String(bytes, java.nio.charset.StandardCharsets.UTF_8);
-			}
-			catch (IOException e)
-			{
-				reset();
-				int oldLength = readUnsignedShort();
-				if (oldLength <= 65535)
-				{
-					byte[] bytes = new byte[oldLength];
-					readFully(bytes);
-					return new String(bytes, java.nio.charset.StandardCharsets.UTF_8);
-				}
-				throw new IOException("Failed to read string", e);
-			}
+			byte[] bytes = new byte[length];
+			readFully(bytes);
+			return new String(bytes, java.nio.charset.StandardCharsets.UTF_8);
 		}
-		catch (Exception e)
+		else if (firstTwoBytes == 0x0000)
 		{
-			try
+			// Legacy format: 4-byte length starting with 0x0000
+			int nextTwoBytes = readUnsignedShort();
+			if (nextTwoBytes == 0)
 			{
-				reset();
+				return "";
 			}
-			catch (IOException resetException)
-			{
-				throw new IOException("Failed to read string and reset stream", e);
-			}
-			
-			try
-			{
-				int oldLength = readUnsignedShort();
-				if (oldLength <= 65535)
-				{
-					byte[] bytes = new byte[oldLength];
-					readFully(bytes);
-					return new String(bytes, java.nio.charset.StandardCharsets.UTF_8);
-				}
-			}
-			catch (Exception oldFormatException)
-			{
-				throw new IOException("Failed to read string in both formats", e);
-			}
-			
-			throw new IOException("Failed to read string", e);
+			int length = nextTwoBytes;
+			byte[] bytes = new byte[length];
+			readFully(bytes);
+			return new String(bytes, java.nio.charset.StandardCharsets.UTF_8);
+		}
+		else
+		{
+			// Old format: 2-byte length + UTF-8 bytes
+			byte[] bytes = new byte[firstTwoBytes];
+			readFully(bytes);
+			return new String(bytes, java.nio.charset.StandardCharsets.UTF_8);
 		}
 	}
 }

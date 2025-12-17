@@ -189,8 +189,9 @@ public class ByteBufferDataInputTest
 	@Test
 	public void test_readUTFLong_backwardCompatibility_oldFormat_maxSize() throws IOException
 	{
+		// Use 65534 instead of 65535 to avoid collision with 0xFFFF marker
 		StringBuilder sb = new StringBuilder();
-		for (int i = 0; i < 65535; i++)
+		for (int i = 0; i < 65534; i++)
 		{
 			sb.append('A');
 		}
@@ -204,7 +205,7 @@ public class ByteBufferDataInputTest
 				ByteBuffer.wrap(baos.toByteArray()));
 		String result = dataInput.readUTFLong();
 		assertEquals(testString, result);
-		assertEquals(65535, result.getBytes(java.nio.charset.StandardCharsets.UTF_8).length);
+		assertEquals(65534, result.getBytes(java.nio.charset.StandardCharsets.UTF_8).length);
 	}
 
 	@Test
@@ -233,5 +234,37 @@ public class ByteBufferDataInputTest
 				ByteBuffer.wrap(output.getBytes()));
 		String result = dataInput.readUTFLong();
 		assertEquals(testString, result);
+	}
+
+	@Test
+	public void test_readUTFLong_legacyFormat_smallString() throws IOException
+	{
+		// Simulates legacy format from commit 0866c3fe (4-byte length, no marker)
+		String testString = "Legacy format test";
+		byte[] utf8Bytes = testString.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+
+		java.io.ByteArrayOutputStream baos = new java.io.ByteArrayOutputStream();
+		java.io.DataOutputStream dos = new java.io.DataOutputStream(baos);
+		dos.writeInt(utf8Bytes.length);  // 4-byte length (no marker)
+		dos.write(utf8Bytes);
+
+		ByteBufferDataInput dataInput = new ByteBufferDataInput(
+				ByteBuffer.wrap(baos.toByteArray()));
+		String result = dataInput.readUTFLong();
+		assertEquals(testString, result);
+	}
+
+	@Test
+	public void test_readUTFLong_legacyFormat_emptyString() throws IOException
+	{
+		// Legacy format with empty string
+		java.io.ByteArrayOutputStream baos = new java.io.ByteArrayOutputStream();
+		java.io.DataOutputStream dos = new java.io.DataOutputStream(baos);
+		dos.writeInt(0);  // 4-byte length = 0
+
+		ByteBufferDataInput dataInput = new ByteBufferDataInput(
+				ByteBuffer.wrap(baos.toByteArray()));
+		String result = dataInput.readUTFLong();
+		assertEquals("", result);
 	}
 }

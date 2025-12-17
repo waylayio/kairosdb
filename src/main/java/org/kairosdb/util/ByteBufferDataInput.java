@@ -117,59 +117,53 @@ public class ByteBufferDataInput implements KDataInput
 		return DataInputStream.readUTF(this);
 	}
 
+	/**
+	 * Reads a string in one of three formats for backward compatibility:
+	 * <ul>
+	 *   <li>New format: 0xFFFF marker + 4-byte length + raw UTF-8</li>
+	 *   <li>Legacy format: 4-byte length (starting with 0x0000) + raw UTF-8</li>
+	 *   <li>Old format: 2-byte length + UTF-8 bytes</li>
+	 * </ul>
+	 */
 	@Override
 	public String readUTFLong() throws IOException
 	{
-		int savedPosition = m_buffer.position();
-		int totalRemaining = m_buffer.remaining();
-		
-		if (totalRemaining < 2)
+		if (m_buffer.remaining() < 2)
 		{
 			throw new IOException("Not enough bytes to read string length");
 		}
 		
-		if (totalRemaining >= 4)
+		int firstTwoBytes = readUnsignedShort();
+		
+		if (firstTwoBytes == 0xFFFF)
 		{
-			int newLength = readInt();
-			
-			if (newLength >= 0 && newLength <= Integer.MAX_VALUE - 10)
+			// New format: 0xFFFF marker + 4-byte length + raw UTF-8
+			int length = readInt();
+			if (length < 0)
 			{
-				int remainingAfterLength = m_buffer.remaining();
-				if (remainingAfterLength >= newLength)
-				{
-					byte[] bytes = new byte[newLength];
-					readFully(bytes);
-					return new String(bytes, java.nio.charset.StandardCharsets.UTF_8);
-				}
-				m_buffer.position(savedPosition);
+				throw new IOException("Invalid string length: " + length);
 			}
-			else
-			{
-				m_buffer.position(savedPosition);
-			}
+			byte[] bytes = new byte[length];
+			readFully(bytes);
+			return new String(bytes, java.nio.charset.StandardCharsets.UTF_8);
 		}
-		
-		m_buffer.position(savedPosition);
-		int oldLength = readUnsignedShort();
-		int remainingAfterLength = m_buffer.remaining();
-		
-		if (oldLength <= 65535 && remainingAfterLength == oldLength)
+		else if (firstTwoBytes == 0x0000)
 		{
-			byte[] bytes = new byte[oldLength];
+			// Legacy format: 4-byte length starting with 0x0000
+			int nextTwoBytes = readUnsignedShort();
+			if (nextTwoBytes == 0)
+			{
+				return "";
+			}
+			int length = nextTwoBytes;
+			byte[] bytes = new byte[length];
 			readFully(bytes);
 			return new String(bytes, java.nio.charset.StandardCharsets.UTF_8);
 		}
 		else
 		{
-			m_buffer.position(savedPosition);
-			int newLength = readInt();
-			
-			if (newLength < 0 || newLength > Integer.MAX_VALUE - 10)
-			{
-				throw new IOException("Invalid string length: " + newLength);
-			}
-			
-			byte[] bytes = new byte[newLength];
+			// Old format: 2-byte length + UTF-8 bytes
+			byte[] bytes = new byte[firstTwoBytes];
 			readFully(bytes);
 			return new String(bytes, java.nio.charset.StandardCharsets.UTF_8);
 		}
