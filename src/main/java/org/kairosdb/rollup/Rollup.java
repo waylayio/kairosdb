@@ -1,7 +1,7 @@
 package org.kairosdb.rollup;
 
 import com.google.gson.annotations.SerializedName;
-import org.apache.bval.constraints.NotEmpty;
+import javax.validation.constraints.NotEmpty;
 import org.joda.time.DateTimeZone;
 import org.kairosdb.core.datastore.QueryMetric;
 
@@ -12,7 +12,7 @@ import java.util.List;
 public class Rollup
 {
 	@NotNull
-	@NotEmpty()
+	@NotEmpty
 	@SerializedName("save_as")
 	private String saveAs;
 

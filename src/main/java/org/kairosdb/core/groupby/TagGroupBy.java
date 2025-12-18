@@ -15,7 +15,7 @@
  */
 package org.kairosdb.core.groupby;
 
-import org.apache.bval.constraints.NotEmpty;
+import javax.validation.constraints.NotEmpty;
 import org.kairosdb.core.DataPoint;
 import org.kairosdb.core.annotation.FeatureComponent;
 import org.kairosdb.core.annotation.FeatureProperty;
@@ -37,7 +37,7 @@ import static java.util.Objects.requireNonNull;
 public class TagGroupBy implements GroupBy
 {
 	@NotNull
-	@NotEmpty()
+	@NotEmpty
     @FeatureProperty(
             label = "Tags",
             description = "A list of tags to group by.",

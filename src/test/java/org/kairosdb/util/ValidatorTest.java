@@ -43,7 +43,7 @@ public class ValidatorTest
 		}
 		catch (ValidationException e)
 		{
-			assertThat(e.getMessage(), equalTo("name may not be empty."));
+			assertThat(e.getMessage(), equalTo("name must not be empty."));
 		}
 	}
 
@@ -57,7 +57,7 @@ public class ValidatorTest
 		}
 		catch (ValidationException e)
 		{
-			assertThat(e.getMessage(), equalTo("name may not be null."));
+			assertThat(e.getMessage(), equalTo("name must not be null."));
 		}
 	}
 
@@ -96,7 +96,7 @@ public class ValidatorTest
 		ValidationErrors errors = new ValidationErrors();
 
 		assertThat(Validator.isNotNullOrEmpty(errors, "name", (String)null), equalTo(false));
-		assertThat(errors.getErrors(), hasItem("name may not be null."));
+		assertThat(errors.getErrors(), hasItem("name must not be null."));
 	}
 
 
@@ -106,7 +106,7 @@ public class ValidatorTest
 		ValidationErrors errors = new ValidationErrors();
 
 		assertThat(Validator.isNotNullOrEmpty(errors, "value", (JsonElement)null), equalTo(false));
-		assertThat(errors.getErrors(), hasItem("value may not be null."));
+		assertThat(errors.getErrors(), hasItem("value must not be null."));
 	}
 
 	@Test
@@ -115,7 +115,7 @@ public class ValidatorTest
 		ValidationErrors errors = new ValidationErrors();
 
 		assertThat(Validator.isNotNullOrEmpty(errors, "value", JsonNull.INSTANCE), equalTo(false));
-		assertThat(errors.getErrors(), hasItem("value may not be empty."));
+		assertThat(errors.getErrors(), hasItem("value must not be empty."));
 	}
 
 	@Test
@@ -124,7 +124,7 @@ public class ValidatorTest
 		ValidationErrors errors = new ValidationErrors();
 
 		assertThat(Validator.isNotNullOrEmpty(errors, "value", new JsonPrimitive("")), equalTo(false));
-		assertThat(errors.getErrors(), hasItem("value may not be empty."));
+		assertThat(errors.getErrors(), hasItem("value must not be empty."));
 	}
 
 	@Test
@@ -133,7 +133,7 @@ public class ValidatorTest
 		ValidationErrors errors = new ValidationErrors();
 
 		assertThat(Validator.isNotNullOrEmpty(errors, "value", new JsonArray()), equalTo(false));
-		assertThat(errors.getErrors(), hasItem("value may not be an empty array."));
+		assertThat(errors.getErrors(), hasItem("value must not be an empty array."));
 	}
 
 	@Test
