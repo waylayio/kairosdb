@@ -25,9 +25,10 @@ public class StringDataPoint extends DataPointHelper
 	@Override
 	public void writeValueToBuffer(DataOutput buffer) throws IOException
 	{
-		if (buffer instanceof org.kairosdb.util.KDataOutput)
+		if (buffer instanceof org.kairosdb.util.LongUTFWriter)
 		{
-			((org.kairosdb.util.KDataOutput) buffer).writeUTFLong(m_value);
+			// Use extended format for proper UTF-8 encoding and large string support
+			((org.kairosdb.util.LongUTFWriter) buffer).writeUTFLong(m_value);
 		}
 		else
 		{

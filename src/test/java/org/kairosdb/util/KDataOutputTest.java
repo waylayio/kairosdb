@@ -19,8 +19,8 @@ public class KDataOutputTest
 		output.writeUTFLong(testString);
 
 		byte[] bytes = output.getBytes();
-		// 4 bytes (int length) + UTF-8 encoded string bytes
-		int expectedLength = 4 + testString.getBytes(StandardCharsets.UTF_8).length;
+		// 2 bytes (0xFFFF marker) + 4 bytes (int length) + UTF-8 encoded string bytes
+		int expectedLength = 6 + testString.getBytes(StandardCharsets.UTF_8).length;
 		assertEquals(expectedLength, bytes.length);
 
 		KDataInput input = KDataInput.createInput(bytes);
@@ -36,8 +36,8 @@ public class KDataOutputTest
 		output.writeUTFLong(testString);
 
 		byte[] bytes = output.getBytes();
-		// 4 bytes (int length) + 0 bytes
-		assertEquals(4, bytes.length);
+		// 2 bytes (0xFFFF marker) + 4 bytes (int length) + 0 bytes
+		assertEquals(6, bytes.length);
 
 		KDataInput input = KDataInput.createInput(bytes);
 		String result = input.readUTFLong();
@@ -60,8 +60,8 @@ public class KDataOutputTest
 		output.writeUTFLong(testString);
 
 		byte[] bytes = output.getBytes();
-		// 4 bytes (int length) + UTF-8 encoded string bytes
-		int expectedLength = 4 + utf8Length;
+		// 2 bytes (0xFFFF marker) + 4 bytes (int length) + UTF-8 encoded string bytes
+		int expectedLength = 6 + utf8Length;
 		assertEquals(expectedLength, bytes.length);
 
 		KDataInput input = KDataInput.createInput(bytes);
@@ -87,8 +87,8 @@ public class KDataOutputTest
 		output.writeUTFLong(testString);
 
 		byte[] bytes = output.getBytes();
-		// 4 bytes (int length) + 65535 bytes
-		assertEquals(4 + 65535, bytes.length);
+		// 2 bytes (0xFFFF marker) + 4 bytes (int length) + 65535 bytes
+		assertEquals(6 + 65535, bytes.length);
 
 		KDataInput input = KDataInput.createInput(bytes);
 		String result = input.readUTFLong();
@@ -113,8 +113,8 @@ public class KDataOutputTest
 		output.writeUTFLong(testString);
 
 		byte[] bytes = output.getBytes();
-		// 4 bytes (int length) + 100000 bytes
-		assertEquals(4 + 100000, bytes.length);
+		// 2 bytes (0xFFFF marker) + 4 bytes (int length) + 100000 bytes
+		assertEquals(6 + 100000, bytes.length);
 
 		KDataInput input = KDataInput.createInput(bytes);
 		String result = input.readUTFLong();
@@ -139,8 +139,8 @@ public class KDataOutputTest
 		output.writeUTFLong(testString);
 
 		byte[] bytes = output.getBytes();
-		// 4 bytes (int length) + 200000 bytes
-		assertEquals(4 + 200000, bytes.length);
+		// 2 bytes (0xFFFF marker) + 4 bytes (int length) + 200000 bytes
+		assertEquals(6 + 200000, bytes.length);
 
 		KDataInput input = KDataInput.createInput(bytes);
 		String result = input.readUTFLong();
@@ -177,7 +177,7 @@ public class KDataOutputTest
 		output.writeUTFLong(testString);
 
 		byte[] bytes = output.getBytes();
-		assertEquals(4 + utf8Length, bytes.length);
+		assertEquals(6 + utf8Length, bytes.length);
 
 		KDataInput input = KDataInput.createInput(bytes);
 		String result = input.readUTFLong();
@@ -203,7 +203,7 @@ public class KDataOutputTest
 	@Test
 	public void test_writeUTFLong_formatVerification() throws IOException
 	{
-		// 4-byte int length prefix followed by UTF-8 bytes
+		// 2-byte 0xFFFF marker + 4-byte int length prefix followed by UTF-8 bytes
 		String testString = "Test";
 		KDataOutput output = new KDataOutput();
 		output.writeUTFLong(testString);
@@ -211,16 +211,20 @@ public class KDataOutputTest
 		byte[] bytes = output.getBytes();
 		byte[] expectedUtf8 = testString.getBytes(StandardCharsets.UTF_8);
 
-		// First 4 bytes should be the length as int
-		int length = ((bytes[0] & 0xFF) << 24) |
-				((bytes[1] & 0xFF) << 16) |
-				((bytes[2] & 0xFF) << 8) |
-				(bytes[3] & 0xFF);
+		// First 2 bytes should be 0xFFFF marker
+		int marker = ((bytes[0] & 0xFF) << 8) | (bytes[1] & 0xFF);
+		assertEquals(0xFFFF, marker);
+
+		// Next 4 bytes should be the length as int
+		int length = ((bytes[2] & 0xFF) << 24) |
+				((bytes[3] & 0xFF) << 16) |
+				((bytes[4] & 0xFF) << 8) |
+				(bytes[5] & 0xFF);
 		assertEquals(expectedUtf8.length, length);
 
 		// Remaining bytes should be the UTF-8 encoded string
 		byte[] actualUtf8 = new byte[expectedUtf8.length];
-		System.arraycopy(bytes, 4, actualUtf8, 0, expectedUtf8.length);
+		System.arraycopy(bytes, 6, actualUtf8, 0, expectedUtf8.length);
 		assertArrayEquals(expectedUtf8, actualUtf8);
 	}
 }

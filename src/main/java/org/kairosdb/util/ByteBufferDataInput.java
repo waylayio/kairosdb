@@ -117,59 +117,73 @@ public class ByteBufferDataInput implements KDataInput
 		return DataInputStream.readUTF(this);
 	}
 
+	/**
+	 * Reads a string in one of three formats for backward compatibility:
+	 * <ul>
+	 *   <li>New format: 0xFFFF marker + 4-byte length + raw UTF-8</li>
+	 *   <li>Legacy format: 4-byte length (starting with 0x0000) + raw UTF-8</li>
+	 *   <li>Old format: 2-byte length + UTF-8 bytes (from DataOutputStream.writeUTF)</li>
+	 * </ul>
+	 */
 	@Override
 	public String readUTFLong() throws IOException
 	{
-		int savedPosition = m_buffer.position();
-		int totalRemaining = m_buffer.remaining();
-		
-		if (totalRemaining < 2)
+		if (m_buffer.remaining() < 2)
 		{
 			throw new IOException("Not enough bytes to read string length");
 		}
 		
-		if (totalRemaining >= 4)
+		int savedPosition = m_buffer.position();
+		int firstTwoBytes = readUnsignedShort();
+		
+		if (firstTwoBytes == 0xFFFF)
 		{
-			int newLength = readInt();
-			
-			if (newLength >= 0 && newLength <= Integer.MAX_VALUE - 10)
+			// Could be new format marker OR old format with length=65535
+			if (m_buffer.remaining() >= 4)
 			{
-				int remainingAfterLength = m_buffer.remaining();
-				if (remainingAfterLength >= newLength)
+				int possibleLength = readInt();
+				if (possibleLength >= 0 && possibleLength <= m_buffer.remaining())
 				{
-					byte[] bytes = new byte[newLength];
+					// New format: marker + 4-byte length + raw UTF-8
+					byte[] bytes = new byte[possibleLength];
 					readFully(bytes);
 					return new String(bytes, java.nio.charset.StandardCharsets.UTF_8);
 				}
-				m_buffer.position(savedPosition);
 			}
-			else
-			{
-				m_buffer.position(savedPosition);
-			}
-		}
-		
-		m_buffer.position(savedPosition);
-		int oldLength = readUnsignedShort();
-		int remainingAfterLength = m_buffer.remaining();
-		
-		if (oldLength <= 65535 && remainingAfterLength == oldLength)
-		{
-			byte[] bytes = new byte[oldLength];
+			// Fall back to old format: 0xFFFF means length=65535
+			m_buffer.position(savedPosition + 2);
+			byte[] bytes = new byte[65535];
 			readFully(bytes);
 			return new String(bytes, java.nio.charset.StandardCharsets.UTF_8);
 		}
+		else if (firstTwoBytes == 0x0000)
+		{
+			// Could be legacy format OR old format empty string
+			if (m_buffer.remaining() >= 2)
+			{
+				int nextTwoBytes = readUnsignedShort();
+				if (nextTwoBytes == 0)
+				{
+					// Empty string (works for both legacy and old format)
+					return "";
+				}
+				if (nextTwoBytes <= m_buffer.remaining())
+				{
+					// Legacy format: 4-byte length (0x0000 + nextTwoBytes)
+					byte[] bytes = new byte[nextTwoBytes];
+					readFully(bytes);
+					return new String(bytes, java.nio.charset.StandardCharsets.UTF_8);
+				}
+				// Length doesn't fit, revert and treat as old format
+				m_buffer.position(savedPosition + 2);
+			}
+			// Old format empty string
+			return "";
+		}
 		else
 		{
-			m_buffer.position(savedPosition);
-			int newLength = readInt();
-			
-			if (newLength < 0 || newLength > Integer.MAX_VALUE - 10)
-			{
-				throw new IOException("Invalid string length: " + newLength);
-			}
-			
-			byte[] bytes = new byte[newLength];
+			// Old format: 2-byte length + UTF-8 bytes
+			byte[] bytes = new byte[firstTwoBytes];
 			readFully(bytes);
 			return new String(bytes, java.nio.charset.StandardCharsets.UTF_8);
 		}

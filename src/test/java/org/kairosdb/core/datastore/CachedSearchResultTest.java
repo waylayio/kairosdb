@@ -24,6 +24,8 @@ import org.kairosdb.core.datapoints.IngestionTimestampDataPoint;
 import org.kairosdb.core.datapoints.LegacyDataPointFactory;
 import org.kairosdb.core.datapoints.LegacyDoubleDataPoint;
 import org.kairosdb.core.datapoints.LegacyLongDataPoint;
+import org.kairosdb.core.datapoints.StringDataPoint;
+import org.kairosdb.core.datapoints.StringDataPointFactory;
 
 import java.io.IOException;
 import java.util.*;
@@ -310,5 +312,182 @@ public class CachedSearchResultTest
 		}
 	}
 
+	@Test
+	public void test_StringDataPoint_Roundtrip() throws IOException
+	{
+		String tempFile = System.getProperty("java.io.tmpdir") + "/baseFile_string";
+		CachedSearchResult csResult =
+				CachedSearchResult.createCachedSearchResult("metric_string", tempFile, dataPointFactory, true);
 
+		long now = System.currentTimeMillis();
+
+		SortedMap<String, String> tags = new TreeMap<>();
+		tags.put("host", "A");
+		QueryCallback.DataPointWriter dataPointWriter = csResult.startDataPointSet(StringDataPointFactory.DST_STRING, tags);
+
+		String[] testStrings = {
+				"Simple string",
+				"Unicode: 你好世界 🌍",
+				"",
+				"Special chars: \t\n\r\"'\\",
+		};
+
+		for (int i = 0; i < testStrings.length; i++)
+		{
+			dataPointWriter.addDataPoint(new StringDataPoint(now + i, testStrings[i]));
+		}
+
+		dataPointWriter.close();
+
+		List<DataPointRow> rows = csResult.getRows();
+		assertEquals(1, rows.size());
+
+		DataPointRow row = rows.get(0);
+
+		for (int i = 0; i < testStrings.length; i++)
+		{
+			assertThat(row.hasNext(), equalTo(true));
+			DataPoint dp = row.next();
+			assertThat(dp instanceof StringDataPoint, equalTo(true));
+			StringDataPoint sdp = (StringDataPoint) dp;
+			assertThat(sdp.getValue(), equalTo(testStrings[i]));
+			assertThat(sdp.getTimestamp(), equalTo(now + i));
+		}
+
+		assertThat(row.hasNext(), equalTo(false));
+		row.close();
+		csResult.close();
+
+		// Re-open cached file and verify data survives disk roundtrip
+		csResult = CachedSearchResult.openCachedSearchResult("metric_string", tempFile, 100, dataPointFactory, true);
+		rows = csResult.getRows();
+		assertEquals(1, rows.size());
+
+		row = rows.get(0);
+
+		for (int i = 0; i < testStrings.length; i++)
+		{
+			assertThat(row.hasNext(), equalTo(true));
+			DataPoint dp = row.next();
+			assertThat(dp instanceof StringDataPoint, equalTo(true));
+			StringDataPoint sdp = (StringDataPoint) dp;
+			assertThat(sdp.getValue(), equalTo(testStrings[i]));
+			assertThat(sdp.getTimestamp(), equalTo(now + i));
+		}
+
+		assertThat(row.hasNext(), equalTo(false));
+		row.close();
+		csResult.close();
+	}
+
+	@Test
+	public void test_StringDataPoint_LargeStrings() throws IOException
+	{
+		String tempFile = System.getProperty("java.io.tmpdir") + "/baseFile_large_string";
+		CachedSearchResult csResult =
+				CachedSearchResult.createCachedSearchResult("metric_large_string", tempFile, dataPointFactory, true);
+
+		long now = System.currentTimeMillis();
+
+		SortedMap<String, String> tags = new TreeMap<>();
+		tags.put("host", "A");
+		QueryCallback.DataPointWriter dataPointWriter = csResult.startDataPointSet(StringDataPointFactory.DST_STRING, tags);
+
+		// Create large strings that exceed the old writeUTF limit (65535 bytes)
+		StringBuilder sb = new StringBuilder();
+		for (int i = 0; i < 100000; i++)
+		{
+			sb.append("A");
+		}
+		String largeString = sb.toString();  // 100KB string
+
+		// Also test a string with unicode that results in large UTF-8
+		StringBuilder unicodeSb = new StringBuilder();
+		for (int i = 0; i < 30000; i++)
+		{
+			unicodeSb.append("日");  // 3 bytes in UTF-8
+		}
+		String largeUnicodeString = unicodeSb.toString();  // ~90KB in UTF-8
+
+		dataPointWriter.addDataPoint(new StringDataPoint(now, largeString));
+		dataPointWriter.addDataPoint(new StringDataPoint(now + 1, largeUnicodeString));
+		dataPointWriter.close();
+
+		List<DataPointRow> rows = csResult.getRows();
+		assertEquals(1, rows.size());
+
+		DataPointRow row = rows.get(0);
+
+		// Verify large ASCII string
+		assertThat(row.hasNext(), equalTo(true));
+		DataPoint dp1 = row.next();
+		assertThat(dp1 instanceof StringDataPoint, equalTo(true));
+		assertThat(((StringDataPoint) dp1).getValue(), equalTo(largeString));
+
+		// Verify large Unicode string
+		assertThat(row.hasNext(), equalTo(true));
+		DataPoint dp2 = row.next();
+		assertThat(dp2 instanceof StringDataPoint, equalTo(true));
+		assertThat(((StringDataPoint) dp2).getValue(), equalTo(largeUnicodeString));
+
+		assertThat(row.hasNext(), equalTo(false));
+		row.close();
+		csResult.close();
+
+		// Re-open cached file and verify large strings survive disk roundtrip
+		csResult = CachedSearchResult.openCachedSearchResult("metric_large_string", tempFile, 100, dataPointFactory, true);
+		rows = csResult.getRows();
+		assertEquals(1, rows.size());
+
+		row = rows.get(0);
+
+		assertThat(row.hasNext(), equalTo(true));
+		dp1 = row.next();
+		assertThat(((StringDataPoint) dp1).getValue(), equalTo(largeString));
+
+		assertThat(row.hasNext(), equalTo(true));
+		dp2 = row.next();
+		assertThat(((StringDataPoint) dp2).getValue(), equalTo(largeUnicodeString));
+
+		assertThat(row.hasNext(), equalTo(false));
+		row.close();
+		csResult.close();
+	}
+
+	@Test
+	public void test_StringDataPoint_ManyStringsBeyondBufferSize() throws IOException
+	{
+		String tempFile = System.getProperty("java.io.tmpdir") + "/baseFile_many_strings";
+		CachedSearchResult csResult = CachedSearchResult.createCachedSearchResult(
+				"metric_many_strings", tempFile, dataPointFactory, true);
+
+		// Create many strings to exceed buffer size and test buffer flushing
+		int numberOfDataPoints = CachedSearchResult.WRITE_BUFFER_SIZE / 10;  // Ensure we exceed buffer
+		QueryCallback.DataPointWriter dataPointWriter = csResult.startDataPointSet(
+				StringDataPointFactory.DST_STRING, Collections.<String, String>emptySortedMap());
+
+		long now = System.currentTimeMillis();
+		for (int i = 0; i < numberOfDataPoints; i++)
+		{
+			dataPointWriter.addDataPoint(new StringDataPoint(now + i, "Value_" + i));
+		}
+
+		dataPointWriter.close();
+
+		List<DataPointRow> rows = csResult.getRows();
+		DataPointRow row = rows.iterator().next();
+
+		int count = 0;
+		while (row.hasNext())
+		{
+			DataPoint dataPoint = row.next();
+			assertThat(dataPoint instanceof StringDataPoint, equalTo(true));
+			assertThat(((StringDataPoint) dataPoint).getValue(), equalTo("Value_" + count));
+			count++;
+		}
+
+		assertThat(count, equalTo(numberOfDataPoints));
+		row.close();
+		csResult.close();
+	}
 }

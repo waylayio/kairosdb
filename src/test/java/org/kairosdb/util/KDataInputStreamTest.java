@@ -138,8 +138,9 @@ public class KDataInputStreamTest
 	@Test
 	public void test_readUTFLong_backwardCompatibility_oldFormat_maxSize() throws IOException
 	{
+		// Use 65534 instead of 65535 to avoid collision with 0xFFFF marker
 		StringBuilder sb = new StringBuilder();
-		for (int i = 0; i < 65535; i++)
+		for (int i = 0; i < 65534; i++)
 		{
 			sb.append('A');
 		}
@@ -153,7 +154,7 @@ public class KDataInputStreamTest
 				new ByteArrayInputStream(baos.toByteArray()));
 		String result = input.readUTFLong();
 		assertEquals(testString, result);
-		assertEquals(65535, result.getBytes(StandardCharsets.UTF_8).length);
+		assertEquals(65534, result.getBytes(StandardCharsets.UTF_8).length);
 	}
 
 	@Test
@@ -204,6 +205,135 @@ public class KDataInputStreamTest
 				new ByteArrayInputStream(combined));
 		assertEquals("Old format string", input.readUTFLong());
 		assertEquals("New format string", input.readUTFLong());
+	}
+
+	@Test
+	public void test_readUTFLong_legacyFormat_smallString() throws IOException
+	{
+		// Simulates legacy format from commit 0866c3fe (4-byte length, no marker)
+		// This should be detected via the 0x0000 high bytes in the length
+		String testString = "Legacy format test";
+		byte[] utf8Bytes = testString.getBytes(StandardCharsets.UTF_8);
+
+		java.io.ByteArrayOutputStream baos = new java.io.ByteArrayOutputStream();
+		DataOutputStream dos = new DataOutputStream(baos);
+		dos.writeInt(utf8Bytes.length);  // 4-byte length (no marker)
+		dos.write(utf8Bytes);
+
+		KDataInputStream input = new KDataInputStream(
+				new ByteArrayInputStream(baos.toByteArray()));
+		String result = input.readUTFLong();
+		assertEquals(testString, result);
+	}
+
+	@Test
+	public void test_readUTFLong_legacyFormat_emptyString() throws IOException
+	{
+		// Legacy format with empty string
+		java.io.ByteArrayOutputStream baos = new java.io.ByteArrayOutputStream();
+		DataOutputStream dos = new DataOutputStream(baos);
+		dos.writeInt(0);  // 4-byte length = 0
+
+		KDataInputStream input = new KDataInputStream(
+				new ByteArrayInputStream(baos.toByteArray()));
+		String result = input.readUTFLong();
+		assertEquals("", result);
+	}
+
+	@Test
+	public void test_readUTFLong_oldFormat_emptyString() throws IOException
+	{
+		// Old format empty string - just 2 bytes: 0x0000
+		// This tests the edge case where old writeUTF empty string could be
+		// confused with legacy format (which also starts with 0x0000)
+		java.io.ByteArrayOutputStream baos = new java.io.ByteArrayOutputStream();
+		DataOutputStream dos = new DataOutputStream(baos);
+		dos.writeUTF("");  // Old format: 2-byte length = 0
+
+		KDataInputStream input = new KDataInputStream(
+				new ByteArrayInputStream(baos.toByteArray()));
+		String result = input.readUTFLong();
+		assertEquals("", result);
+	}
+
+	@Test
+	public void test_readUTFLong_oldFormat_maxLength65535() throws IOException
+	{
+		// Old format with exactly 65535 bytes - length is 0xFFFF
+		// This tests the edge case where 0xFFFF length could be confused with new format marker
+		StringBuilder sb = new StringBuilder();
+		for (int i = 0; i < 65535; i++)
+		{
+			sb.append('A');
+		}
+		String testString = sb.toString();
+
+		java.io.ByteArrayOutputStream baos = new java.io.ByteArrayOutputStream();
+		DataOutputStream dos = new DataOutputStream(baos);
+		dos.writeUTF(testString);  // Old format with 0xFFFF length
+
+		KDataInputStream input = new KDataInputStream(
+				new ByteArrayInputStream(baos.toByteArray()));
+		String result = input.readUTFLong();
+		assertEquals(testString, result);
+		assertEquals(65535, result.length());
+	}
+
+	@Test
+	public void test_readUTFLong_mixedFormats_allThree() throws IOException
+	{
+		// Test reading all three formats in sequence
+		java.io.ByteArrayOutputStream combined = new java.io.ByteArrayOutputStream();
+
+		// 1. Old format string
+		java.io.ByteArrayOutputStream oldFormatBaos = new java.io.ByteArrayOutputStream();
+		DataOutputStream oldDos = new DataOutputStream(oldFormatBaos);
+		oldDos.writeUTF("Old format");
+		combined.write(oldFormatBaos.toByteArray());
+
+		// 2. Legacy format string (4-byte length, no marker)
+		java.io.ByteArrayOutputStream legacyBaos = new java.io.ByteArrayOutputStream();
+		DataOutputStream legacyDos = new DataOutputStream(legacyBaos);
+		byte[] legacyBytes = "Legacy format".getBytes(StandardCharsets.UTF_8);
+		legacyDos.writeInt(legacyBytes.length);
+		legacyDos.write(legacyBytes);
+		combined.write(legacyBaos.toByteArray());
+
+		// 3. New format string (0xFFFF marker + 4-byte length)
+		KDataOutput newOutput = new KDataOutput();
+		newOutput.writeUTFLong("New format");
+		combined.write(newOutput.getBytes());
+
+		KDataInputStream input = new KDataInputStream(
+				new ByteArrayInputStream(combined.toByteArray()));
+		assertEquals("Old format", input.readUTFLong());
+		assertEquals("Legacy format", input.readUTFLong());
+		assertEquals("New format", input.readUTFLong());
+	}
+
+	@Test
+	public void test_readUTFLong_legacyFormat_largeString() throws IOException
+	{
+		// Legacy format with large string (>65535 bytes would have non-zero high bytes)
+		// But since legacy format was only used for strings that exceeded writeUTF limit,
+		// we test with a moderately sized string
+		StringBuilder sb = new StringBuilder();
+		for (int i = 0; i < 10000; i++)
+		{
+			sb.append('X');
+		}
+		String testString = sb.toString();
+		byte[] utf8Bytes = testString.getBytes(StandardCharsets.UTF_8);
+
+		java.io.ByteArrayOutputStream baos = new java.io.ByteArrayOutputStream();
+		DataOutputStream dos = new DataOutputStream(baos);
+		dos.writeInt(utf8Bytes.length);  // 4-byte length
+		dos.write(utf8Bytes);
+
+		KDataInputStream input = new KDataInputStream(
+				new ByteArrayInputStream(baos.toByteArray()));
+		String result = input.readUTFLong();
+		assertEquals(testString, result);
 	}
 }
 

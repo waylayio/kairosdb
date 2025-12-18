@@ -3,11 +3,12 @@ package org.kairosdb.util;
 import java.io.*;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
+import java.nio.charset.StandardCharsets;
 
 /**
  Created by bhawkins on 12/10/13.
  */
-public class BufferedDataOutputStream extends DataOutputStream
+public class BufferedDataOutputStream extends DataOutputStream implements LongUTFWriter
 {
 	private WrappedOutputStream m_wrappedOutputStream;
 
@@ -33,6 +34,18 @@ public class BufferedDataOutputStream extends DataOutputStream
 	public long getPosition()
 	{
 		return m_wrappedOutputStream.getPosition();
+	}
+
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
+	public void writeUTFLong(String s) throws IOException
+	{
+		byte[] utf8Bytes = s.getBytes(StandardCharsets.UTF_8);
+		writeShort(0xFFFF);
+		writeInt(utf8Bytes.length);
+		write(utf8Bytes);
 	}
 
 	private static class WrappedOutputStream extends OutputStream
