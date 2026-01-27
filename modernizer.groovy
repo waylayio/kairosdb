@@ -8,7 +8,7 @@ InputStream is = Thread.currentThread().getContextClassLoader().getResourceAsStr
 
 Map<String, Violation> violationMap = Modernizer.parseFromXml(is);
 
-Modernizer modernizer = new Modernizer("1.8", violationMap, new ArrayList<String>(), new ArrayList<Pattern>(),
+Modernizer modernizer = new Modernizer("11", violationMap, new ArrayList<String>(), new ArrayList<Pattern>(),
 		new ArrayList<String>(), new HashSet<String>(), new ArrayList<Pattern>())
 
 buildDir = jc.getBuildDirectory()

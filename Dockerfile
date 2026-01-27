@@ -1,6 +1,6 @@
 ARG KAIROSDB_VERSION=1.3.0-0.2beta
 
-FROM openjdk:8u242-jdk-slim-buster as build
+FROM openjdk:11-jdk-slim-buster as build
 ARG KAIROSDB_VERSION
 
 WORKDIR /home/kairosdb
@@ -12,7 +12,7 @@ RUN cd git && \
 
 RUN tar -xzvf git/build/kairosdb-${KAIROSDB_VERSION}.tar.gz
 
-FROM openjdk:8u242-jdk-slim-buster
+FROM openjdk:11-jdk-slim-buster
 ARG KAIROSDB_VERSION
 ENV KAIROSDB_HOME=/opt/kairosdb-${KAIROSDB_VERSION}
 ENV CLASSPATH=${KAIROSDB_HOME}/lib/*
