@@ -48,19 +48,9 @@ saw.setProperty(PomRule.URL_PROPERTY, "http://kairosdb.org")
 saw = Tablesaw.getCurrentTablesaw()
 saw.includeDefinitionFile("definitions.xml")
 
-//add -D usejdk11=true for java 11 compile
-useJdk11 = saw.getProperty("usejdk11", "false").equals("true")
-
-javaVersion = "1.8"
-defaultConfig = "default"
-testConfig = "test"
-
-if (useJdk11)
-{
-	javaVersion = "11"
-	defaultConfig = "jdk11"
-	testConfig = "testjdk11"
-}
+javaVersion = "11"
+defaultConfig = "jdk11"
+testConfig = "testjdk11"
 
 ivyConfig = [defaultConfig, "integration"]
 
