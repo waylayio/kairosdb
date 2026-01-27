@@ -10,17 +10,17 @@ import org.slf4j.LoggerFactory;
 
 import org.agileclick.genorm.runtime.Pair;
 
-import javax.inject.Inject;
-import javax.ws.rs.*;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.*;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
 
 import java.util.ArrayList;
 
 import static java.util.Objects.requireNonNull;
 import static org.kairosdb.core.http.rest.MetricsResource.setHeaders;
 
-@Path("api/v1/admin")
+@Path("/v1/admin")
 public class AdminResource
 {
 	private static final Logger logger = LoggerFactory.getLogger(AdminResource.class);

@@ -26,8 +26,8 @@ import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonToken;
 import com.google.gson.stream.JsonWriter;
 import com.google.inject.Inject;
-import javax.validation.constraints.NotEmpty;
-import org.apache.bval.jsr.ApacheValidationProvider;
+import jakarta.validation.constraints.NotEmpty;
+import org.hibernate.validator.HibernateValidator;
 import org.joda.time.DateTimeZone;
 import org.kairosdb.core.aggregator.*;
 import org.kairosdb.core.annotation.Feature;
@@ -43,12 +43,12 @@ import org.kairosdb.rollup.RollupTask;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.validation.ConstraintViolation;
-import javax.validation.Path;
-import javax.validation.Validation;
-import javax.validation.Validator;
-import javax.validation.constraints.NotNull;
-import javax.validation.metadata.ConstraintDescriptor;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.Path;
+import jakarta.validation.Validation;
+import jakarta.validation.Validator;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.metadata.ConstraintDescriptor;
 import java.beans.BeanInfo;
 import java.beans.IntrospectionException;
 import java.beans.Introspector;
@@ -62,7 +62,7 @@ import java.util.*;
 public class QueryParser
 {
 	protected static final Logger logger = LoggerFactory.getLogger(QueryParser.class);
-	private static final Validator VALIDATOR = Validation.byProvider(ApacheValidationProvider.class).configure().buildValidatorFactory().getValidator();
+	private static final Validator VALIDATOR = Validation.byProvider(HibernateValidator.class).configure().buildValidatorFactory().getValidator();
 
 	private FeatureProcessor m_processingChain;
 	private QueryPluginFactory m_pluginFactory;

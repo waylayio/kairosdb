@@ -28,7 +28,7 @@ import org.kairosdb.testing.Client;
 import org.kairosdb.testing.JsonResponse;
 import org.kairosdb.util.LoggingUtils;
 
-import javax.ws.rs.core.HttpHeaders;
+import jakarta.ws.rs.core.HttpHeaders;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.EnumSet;
@@ -323,7 +323,13 @@ public class MetricsResourceTest extends ResourceBase
 	static void assertResponse(JsonResponse response, int expectedCode)
 	{
 		assertThat(response.getStatusCode(), equalTo(expectedCode));
-		assertThat(response.getHeader("Content-Type"), startsWith("application/json"));
-		assertThat(response.getStatusString(), equalTo("No Content"));
+		if (expectedCode != 204)
+		{
+			assertThat(response.getHeader("Content-Type"), startsWith("application/json"));
+		}
+		if (expectedCode == 204)
+		{
+			assertThat(response.getStatusString(), equalTo("No Content"));
+		}
 	}
 }

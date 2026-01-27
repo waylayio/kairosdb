@@ -19,7 +19,7 @@ package org.kairosdb.core.oauth;
 import com.google.inject.servlet.ServletModule;
 import org.kairosdb.core.KairosRootConfig;
 
-import javax.inject.Singleton;
+import jakarta.inject.Singleton;
 
 public class OAuthModule extends ServletModule
 {

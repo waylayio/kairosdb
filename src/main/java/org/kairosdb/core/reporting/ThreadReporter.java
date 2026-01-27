@@ -20,7 +20,7 @@ import com.google.common.collect.ImmutableSortedMap;
 import java.util.LinkedList;
 import java.util.SortedMap;
 import java.util.TreeMap;
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 import org.kairosdb.core.datapoints.LongDataPointFactory;
 import org.kairosdb.core.datapoints.StringDataPointFactory;
 import org.kairosdb.core.exception.DatastoreException;

@@ -5,8 +5,8 @@
 //        
 package org.kairosdb.core.http.rest.validation;
 
-import javax.validation.ConstraintValidator;
-import javax.validation.ConstraintValidatorContext;
+import jakarta.validation.ConstraintValidator;
+import jakarta.validation.ConstraintValidatorContext;
 
 public class NonZeroValidator implements ConstraintValidator<NonZero, Double>
 {
@@ -21,7 +21,7 @@ public class NonZeroValidator implements ConstraintValidator<NonZero, Double>
 		if (aDouble == 0)
 		{
 			context.disableDefaultConstraintViolation(); // disable violation message
-			context.buildConstraintViolationWithTemplate("may not be zero").addConstraintViolation();  // add message
+			context.buildConstraintViolationWithTemplate("must not be zero").addConstraintViolation();  // add message
 			return false;
 		}
 

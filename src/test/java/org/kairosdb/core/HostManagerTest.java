@@ -4,8 +4,8 @@ import org.junit.Before;
 import org.junit.Test;
 import org.kairosdb.core.datastore.ServiceKeyValue;
 import org.kairosdb.core.exception.DatastoreException;
+import org.kairosdb.testing.FakeScheduledExecutorService;
 import org.kairosdb.testing.FakeServiceKeyStore;
-import org.mockito.Mock;
 
 import java.util.Date;
 import java.util.Map;
@@ -14,7 +14,6 @@ import java.util.concurrent.ScheduledExecutorService;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertNull;
-import static org.mockito.MockitoAnnotations.initMocks;
 
 public class HostManagerTest
 {
@@ -23,15 +22,12 @@ public class HostManagerTest
 
     private HostManager manager;
     private FakeServiceKeyStore keyStore = new FakeServiceKeyStore();
-
-    @Mock
-    private ScheduledExecutorService mockExecutorService;
+    private ScheduledExecutorService executorService = new FakeScheduledExecutorService();
 
     @Before
     public void Setup()
     {
-        initMocks(this);
-        manager = new HostManager(keyStore, mockExecutorService, 10, "myHost", 5, "myGuid");
+        manager = new HostManager(keyStore, executorService, 10, "myHost", 5, "myGuid");
     }
 
     @Test

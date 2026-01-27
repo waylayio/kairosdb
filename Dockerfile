@@ -1,6 +1,6 @@
 ARG KAIROSDB_VERSION=1.3.0-waylay+8-SNAPSHOT
 
-FROM maven:3.9-eclipse-temurin-21 AS build
+FROM maven:3.9-eclipse-temurin-25 AS build
 ARG KAIROSDB_VERSION
 
 WORKDIR /home/kairosdb/git
@@ -13,7 +13,7 @@ RUN mvn clean package -DskipTests -B
 
 RUN tar -xzvf "target/kairosdb-${KAIROSDB_VERSION}.tar.gz"
 
-FROM eclipse-temurin:21-jre
+FROM eclipse-temurin:25-jre
 ARG KAIROSDB_VERSION
 ENV KAIROSDB_HOME=/opt/kairosdb-${KAIROSDB_VERSION}
 ENV CLASSPATH=${KAIROSDB_HOME}/lib/*

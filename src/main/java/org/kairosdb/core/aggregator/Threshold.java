@@ -2,7 +2,7 @@ package org.kairosdb.core.aggregator;
 
 import org.kairosdb.core.annotation.FeatureProperty;
 
-import javax.annotation.Nonnull;
+import jakarta.annotation.Nonnull;
 import java.util.Objects;
 
 class Threshold implements Comparable<Threshold>

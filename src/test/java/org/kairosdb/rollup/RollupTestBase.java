@@ -12,14 +12,12 @@ import org.kairosdb.core.exception.KairosDBException;
 import org.kairosdb.core.http.rest.json.QueryParser;
 import org.kairosdb.core.http.rest.json.TestQueryPluginFactory;
 import org.kairosdb.core.processingstage.TestKairosDBProcessor;
+import org.kairosdb.testing.FakeScheduledExecutorService;
 import org.kairosdb.testing.FakeServiceKeyStore;
-import org.mockito.Mock;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ScheduledExecutorService;
-
-import static org.mockito.MockitoAnnotations.initMocks;
 
 public abstract class RollupTestBase
 {
@@ -30,8 +28,7 @@ public abstract class RollupTestBase
     static final RollupTask TASK4 = createTask("4", "task4");
     static final RollupTask TASK5 = createTask("5", "task5");
 
-    @Mock
-    ScheduledExecutorService mockExecutionService;
+    ScheduledExecutorService mockExecutionService = new FakeScheduledExecutorService();
 
     FakeServiceKeyStore fakeServiceKeyStore = new FakeServiceKeyStore();
     RollUpAssignmentStore assignmentStore = new RollUpAssignmentStoreImpl(fakeServiceKeyStore);
@@ -42,7 +39,6 @@ public abstract class RollupTestBase
     public void setupBase()
             throws KairosDBException
     {
-        initMocks(this);
         queryParser = new QueryParser(new TestKairosDBProcessor(ImmutableList.of(new TestAggregatorFactory())), new TestQueryPluginFactory());
         taskStore = new RollUpTasksStoreImpl(fakeServiceKeyStore,
                 queryParser);

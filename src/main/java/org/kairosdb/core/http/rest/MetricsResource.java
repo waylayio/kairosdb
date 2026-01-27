@@ -50,9 +50,9 @@ import org.kairosdb.util.StatsMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.*;
-import javax.ws.rs.core.*;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.ws.rs.*;
+import jakarta.ws.rs.core.*;
 import java.io.*;
 import java.nio.charset.Charset;
 import java.util.*;
@@ -61,7 +61,7 @@ import java.util.zip.GZIPInputStream;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Objects.requireNonNull;
-import static javax.ws.rs.core.Response.ResponseBuilder;
+import static jakarta.ws.rs.core.Response.ResponseBuilder;
 
 enum NameType
 {
@@ -77,7 +77,7 @@ enum ServerType
 	DELETE
 }
 
-@Path("/api/v1")
+@Path("/v1")
 public class MetricsResource implements KairosMetricReporter
 {
 	public static final Logger logger = LoggerFactory.getLogger(MetricsResource.class);

@@ -15,13 +15,9 @@
  */
 package org.kairosdb.core.http;
 
-import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.Scopes;
-import com.google.inject.servlet.GuiceFilter;
-import com.sun.jersey.guice.JerseyServletModule;
-import com.sun.jersey.guice.spi.container.servlet.GuiceContainer;
-import org.eclipse.jetty.servlets.QoSFilter;
+import com.google.inject.servlet.ServletModule;
 import org.kairosdb.core.http.exceptionmapper.InvalidServerTypeExceptionMapper;
 import org.kairosdb.core.KairosRootConfig;
 import org.kairosdb.core.http.rest.AdminResource;
@@ -29,7 +25,11 @@ import org.kairosdb.core.http.rest.FeaturesResource;
 import org.kairosdb.core.http.rest.MetadataResource;
 import org.kairosdb.core.http.rest.MetricsResource;
 
-public class WebServletModule extends JerseyServletModule
+/**
+ * Guice module for web servlet configuration.
+ * Updated for Jersey 3.x / Jakarta EE compatibility.
+ */
+public class WebServletModule extends ServletModule
 {
 	public static final String QOS_URL = "kairosdb.qos.url";
 	public static final String QOS_PREFIX = "kairosdb.qos.";
@@ -69,9 +69,6 @@ public class WebServletModule extends JerseyServletModule
 	@Override
 	protected void configureServlets()
 	{
-		binder().requireExplicitBindings();
-		bind(GuiceFilter.class);
-
 		//Bind web server
 		bind(WebServer.class);
 
@@ -81,22 +78,9 @@ public class WebServletModule extends JerseyServletModule
 		bind(FeaturesResource.class).in(Scopes.SINGLETON);
 		bind(AdminResource.class).in(Scopes.SINGLETON);
 
-		bind(GuiceContainer.class);
-
 		bind(LoggingFilter.class).in(Scopes.SINGLETON);
-		filter("/*").through(LoggingFilter.class);
 
-		if (qosURL != null)
-		{
-			bind(QoSFilter.class).in(Scopes.SINGLETON);
-			filter(qosURL).through(QoSFilter.class, qosParams);
-		}
-
-		// hook Jackson into Jersey as the POJO <-> JSON mapper
-		bind(JacksonJsonProvider.class).in(Scopes.SINGLETON);
-		serve("/*").with(GuiceContainer.class);
-
-		//
+		// Bind exception mapper
 		bind(InvalidServerTypeExceptionMapper.class).in(Scopes.SINGLETON);
 	}
 }

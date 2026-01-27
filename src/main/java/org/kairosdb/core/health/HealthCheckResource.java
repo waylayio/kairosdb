@@ -5,10 +5,10 @@ import com.google.inject.Inject;
 import com.google.inject.name.Named;
 import org.kairosdb.core.http.rest.MetricsResource;
 
-import javax.ws.rs.*;
-import javax.ws.rs.core.GenericEntity;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.*;
+import jakarta.ws.rs.core.GenericEntity;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -18,7 +18,7 @@ import static org.kairosdb.core.http.rest.MetricsResource.setHeaders;
 /**
  Provides REST APIs for health checks
  */
-@Path("/api/v1/health")
+@Path("/v1/health")
 public class HealthCheckResource
 {
 	private final HealthCheckService m_healthCheckService;
