@@ -4,6 +4,7 @@ on:
 
   push:
     branches:
+      - 2.0.0-waylay
       - 1.3.0-waylay
   pull_request:
 

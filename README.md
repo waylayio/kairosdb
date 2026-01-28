@@ -23,11 +23,11 @@ Join the [KairosDB discussion group](https://groups.google.com/forum/#!forum/kai
 
 ## Building and releasing WAYLAY branch
 
-The Waylay branch is built using maven. For 1.3.0.x versions do checkoud of `1.3.0-waylay` branch before release:
+The Waylay branch is built using maven. For 2.0.0.x versions do checkoud of `2.0.0-waylay` branch before release:
 
-    $ git checkout 1.3.0-waylay
+    $ git checkout 2.0.0-waylay
 
-Note that the version number includes a patch number (e.g. the "+3" in 1.3.0-waylay+1). This patch number
+Note that the version number includes a patch number (e.g. the "+3" in 2.0.0-waylay+3). This patch number
 should be incremented on each release (and the base KairosDB version should remain unchanged).
 
 To run tests using a local Cassandra installation, run
