@@ -93,7 +93,6 @@ public class WebServer implements KairosDBService
 		"conf/auth/auth.props"
 	};
 
-
 	private InetAddress m_address;
 	private int m_port;
 	private String m_webRoot;
@@ -311,7 +310,7 @@ public class WebServer implements KairosDBService
 			gzipHandler.addIncludedMimeTypes("application/json");
 			gzipHandler.addIncludedMethods("GET", "POST");
 			gzipHandler.addIncludedPaths("/*");
-			gzipHandler.setMinGzipSize(1);
+			gzipHandler.setMinGzipSize(23);
 			
 			// ResourceHandler for static content
 			ResourceHandler resourceHandler = new ResourceHandler();
