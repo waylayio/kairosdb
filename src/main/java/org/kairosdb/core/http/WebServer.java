@@ -40,6 +40,7 @@ import org.glassfish.jersey.server.ResourceConfig;
 import org.glassfish.jersey.servlet.ServletContainer;
 import org.kairosdb.core.KairosDBService;
 import org.kairosdb.core.exception.KairosDBException;
+import org.kairosdb.core.health.HealthCheckResource;
 import org.kairosdb.core.http.rest.AdminResource;
 import org.kairosdb.core.http.rest.FeaturesResource;
 import org.kairosdb.core.http.rest.MetadataResource;
@@ -257,6 +258,14 @@ public class WebServer implements KairosDBService
 				resourceConfig.register(m_injector.getInstance(MetadataResource.class));
 				resourceConfig.register(m_injector.getInstance(FeaturesResource.class));
 				resourceConfig.register(m_injector.getInstance(AdminResource.class));
+				try
+				{
+					resourceConfig.register(m_injector.getInstance(HealthCheckResource.class));
+				}
+				catch (Exception e)
+				{
+					logger.debug("HealthCheckResource not available: {}", e.getMessage());
+				}
 				// Register exception mappers
 				try
 				{
