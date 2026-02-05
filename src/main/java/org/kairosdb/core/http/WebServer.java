@@ -47,8 +47,11 @@ import org.kairosdb.core.http.rest.MetricsResource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -82,6 +85,12 @@ public class WebServer implements KairosDBService
 	public static final String JETTY_REQUEST_LOGGING_ENABLED = "kairosdb.jetty.request_logging.enabled";
 	public static final String JETTY_REQUEST_LOGGING_RETAIN_DAYS = "kairosdb.jetty.request_logging.retain_days";
 	public static final String JETTY_REQUEST_LOGGING_IGNORE_PATHS = "kairosdb.jetty.request_logging.ignore_paths";
+	public static final String AUTH_PROPS_SYSTEM_PROPERTY = "kairosdb.auth.props";
+	public static final String KAIROSDB_DEFAULT_HOME = "/opt/kairosdb";
+	public static final String[] AUTH_PROPS_DEFAULT_PATHS = {
+		"conf/auth/secrets/auth.props",
+		"conf/auth/auth.props"
+	};
 
 
 	private InetAddress m_address;
@@ -289,16 +298,15 @@ public class WebServer implements KairosDBService
 			ServletHolder defaultServlet = new ServletHolder("default", DefaultServlet.class);
 			servletContextHandler.addServlet(defaultServlet, "/");
 
-			//adding gzip handler
 			GzipHandler gzipHandler = new GzipHandler();
 			gzipHandler.addIncludedMimeTypes("application/json");
 			gzipHandler.addIncludedMethods("GET", "POST");
 			gzipHandler.addIncludedPaths("/*");
-			gzipHandler.setMinGzipSize(1); // Compress even small responses
+			gzipHandler.setMinGzipSize(1);
 			
 			// ResourceHandler for static content
 			ResourceHandler resourceHandler = new ResourceHandler();
-			java.io.File webRootFile = new java.io.File(m_webRoot);
+			File webRootFile = new File(m_webRoot);
 			if (webRootFile.exists() && webRootFile.isDirectory())
 			{
 				resourceHandler.setBaseResource(ResourceFactory.root().newResource(webRootFile.toPath()));
@@ -311,8 +319,6 @@ public class WebServer implements KairosDBService
 			resourceHandler.setHandler(servletContextHandler);
 
 			m_server.setHandler(gzipHandler);
-
-			//some code for logging
 			if(m_requestLoggingEnabled)
 				initializeJettyRequestLogging();
 
@@ -372,26 +378,68 @@ public class WebServer implements KairosDBService
 		m_server.addConnector(https);
 	}
 
+	static File findConfigFile(String systemProperty, String[] defaultPaths, String homeEnvVar, String defaultHome)
+	{
+		String overridePath = systemProperty != null ? System.getProperty(systemProperty) : null;
+		String homeDir = homeEnvVar != null ? System.getenv(homeEnvVar) : null;
+
+		List<String> searchPaths = new ArrayList<>();
+		if (overridePath != null)
+		{
+			searchPaths.add(overridePath);
+		}
+		for (String defaultPath : defaultPaths)
+		{
+			searchPaths.add(defaultPath);
+			if (homeDir != null)
+			{
+				searchPaths.add(homeDir + "/" + defaultPath);
+			}
+			if (defaultHome != null)
+			{
+				searchPaths.add(defaultHome + "/" + defaultPath);
+			}
+		}
+
+		for (String path : searchPaths)
+		{
+			File file = new File(path);
+			if (file.exists())
+			{
+				return file;
+			}
+		}
+		return null;
+	}
+
 	private SecurityHandler initializeAuth() throws Exception
 	{
-		// Create security handler with constraint mappings using Jetty 12 API
 		SecurityHandler.PathMapped securityHandler = new SecurityHandler.PathMapped();
-		
-		// Note: For JAAS authentication, you need to configure a HashLoginService
-		// or use a custom LoginService implementation that delegates to JAAS
 		HashLoginService loginService = new HashLoginService();
 		loginService.setName(m_authModuleName);
+
+		File authPropsFile = findConfigFile(AUTH_PROPS_SYSTEM_PROPERTY, AUTH_PROPS_DEFAULT_PATHS, "KAIROSDB_HOME", KAIROSDB_DEFAULT_HOME);
+		
+		if (authPropsFile != null)
+		{
+			loginService.setConfig(ResourceFactory.root().newResource(authPropsFile.toPath()));
+			logger.info("Using auth properties file: {}", authPropsFile.getAbsolutePath());
+		}
+		else
+		{
+			logger.warn("No auth properties file found. Authentication will fail for all users. " +
+					"Set -D{}=<path> or create one of: {}", AUTH_PROPS_SYSTEM_PROPERTY, 
+					Arrays.toString(AUTH_PROPS_DEFAULT_PATHS));
+		}
 		
 		securityHandler.setLoginService(loginService);
 		securityHandler.setAuthenticator(new BasicAuthenticator());
 		
 		// Allow health check endpoint without authentication
 		securityHandler.put("/api/v1/health/*", Constraint.ALLOWED);
-		
 		// Require authentication for all other paths
 		securityHandler.put("/*", Constraint.ANY_USER);
 		
-		loginService.start();
 		return securityHandler;
     }
 
