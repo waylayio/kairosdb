@@ -129,32 +129,20 @@ public class OAuthFilter implements Filter
 			String consumerSecret, String providedSignature) 
 			throws NoSuchAlgorithmException, InvalidKeyException, UnsupportedEncodingException
 	{
-		// Build the base string
 		String baseString = buildBaseString(request, oauthParams);
 		
 		// Create the signing key (consumer_secret&token_secret)
 		// For OAuth 1.0 without tokens, token_secret is empty
 		String signingKey = percentEncode(consumerSecret) + "&";
-		
-		// Calculate the expected signature
+
 		String expectedSignature = calculateHmacSha1(baseString, signingKey);
 		
-		// URL decode the provided signature for comparison
-		String decodedProvidedSignature;
-		try
-		{
-			decodedProvidedSignature = URLDecoder.decode(providedSignature, StandardCharsets.UTF_8.name());
-		}
-		catch (Exception e)
-		{
-			decodedProvidedSignature = providedSignature;
-		}
+		// The signature is already decoded in parseOAuthHeader, so compare directly
+		boolean valid = expectedSignature.equals(providedSignature);
 		
-		boolean valid = expectedSignature.equals(decodedProvidedSignature);
-		
-		if (!valid && logger.isDebugEnabled())
+		if (!valid)
 		{
-			logger.debug("Signature mismatch. Expected: {}, Provided: {}", expectedSignature, decodedProvidedSignature);
+			logger.warn("Signature mismatch. Expected: {}, Provided: {}", expectedSignature, providedSignature);
 			logger.debug("Base string: {}", baseString);
 		}
 		
@@ -164,13 +152,12 @@ public class OAuthFilter implements Filter
 	private String buildBaseString(HttpServletRequest request, Map<String, String> oauthParams) 
 			throws UnsupportedEncodingException
 	{
-		// 1. HTTP method (uppercase)
 		String method = request.getMethod().toUpperCase();
 		
-		// 2. Base URL (scheme://host:port/path, without query string)
+		// Base URL (scheme://host:port/path, without query string)
 		String baseUrl = buildBaseUrl(request);
 		
-		// 3. Normalized parameters (sorted, encoded)
+		// Normalized parameters (sorted, encoded)
 		String normalizedParams = normalizeParameters(request, oauthParams);
 
 		return method + "&" + percentEncode(baseUrl) + "&" + percentEncode(normalizedParams);

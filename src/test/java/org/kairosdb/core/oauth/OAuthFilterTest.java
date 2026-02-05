@@ -123,23 +123,11 @@ public class OAuthFilterTest
 		String authHeader = buildOAuthHeader(CONSUMER_KEY, CONSUMER_SECRET);
 		when(mockRequest.getHeader("Authorization")).thenReturn(authHeader);
 		when(mockTokenStore.getToken(CONSUMER_KEY)).thenReturn(CONSUMER_SECRET);
-
-		final int[] errorCode = {0};
-		final String[] errorMsg = {""};
-		doAnswer(invocation -> {
-			errorCode[0] = invocation.getArgument(0);
-			errorMsg[0] = invocation.getArgument(1);
-			return null;
-		}).when(mockResponse).sendError(anyInt(), anyString());
 		
 		filter.doFilter(mockRequest, mockResponse, mockFilterChain);
-
-		if (errorCode[0] != 0)
-		{
-			throw new AssertionError("sendError was called with code " + errorCode[0] + ": " + errorMsg[0]);
-		}
 		
 		verify(mockFilterChain).doFilter(mockRequest, mockResponse);
+		verify(mockResponse, never()).sendError(anyInt(), anyString());
 	}
 	
 	@Test
@@ -158,12 +146,16 @@ public class OAuthFilterTest
 	private String buildOAuthHeader(String consumerKey, String consumerSecret) throws Exception
 	{
 		long timestamp = System.currentTimeMillis() / 1000;
-		return buildOAuthHeaderWithTimestamp(consumerKey, consumerSecret, timestamp);
+		return buildOAuthHeaderWithTimestamp(consumerKey, consumerSecret, timestamp, "fixednonce12345");
 	}
 	
 	private String buildOAuthHeaderWithTimestamp(String consumerKey, String consumerSecret, long timestamp) throws Exception
 	{
-		String nonce = "testnonce" + System.nanoTime();
+		return buildOAuthHeaderWithTimestamp(consumerKey, consumerSecret, timestamp, "fixednonce12345");
+	}
+	
+	private String buildOAuthHeaderWithTimestamp(String consumerKey, String consumerSecret, long timestamp, String nonce) throws Exception
+	{
 
 		TreeMap<String, String> params = new TreeMap<>();
 		params.put("oauth_consumer_key", consumerKey);
