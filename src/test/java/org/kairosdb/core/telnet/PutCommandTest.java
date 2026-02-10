@@ -37,7 +37,7 @@ import org.kairosdb.eventbus.Subscribe;
 import org.kairosdb.events.DataPointEvent;
 import org.kairosdb.util.ValidationException;
 
-import javax.annotation.Nullable;
+import jakarta.annotation.Nullable;
 import java.net.SocketAddress;
 import java.util.Arrays;
 import java.util.Collections;

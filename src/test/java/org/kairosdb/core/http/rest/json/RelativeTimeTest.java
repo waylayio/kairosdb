@@ -20,7 +20,7 @@ import org.junit.Test;
 import org.kairosdb.core.exception.KairosDBException;
 import org.kairosdb.testing.BeanValidationHelper;
 
-import javax.validation.ConstraintViolation;
+import jakarta.validation.ConstraintViolation;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.List;
@@ -131,7 +131,7 @@ public class RelativeTimeTest
 		Set<ConstraintViolation<RelativeTime>> violations = BeanValidationHelper.VALIDATOR.validate(time);
 		List<String> violationMessages = BeanValidationHelper.messagesFor(violations);
 
-		assertThat(violationMessages.get(0), equalTo("unit may not be null"));
+		assertThat(violationMessages.get(0), equalTo("unit must not be null"));
 	}
 
 	@Test

@@ -18,7 +18,7 @@ package org.kairosdb.core.http.rest.json;
 import org.kairosdb.testing.BeanValidationHelper;
 import org.junit.Test;
 
-import javax.validation.ConstraintViolation;
+import jakarta.validation.ConstraintViolation;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Set;
@@ -38,7 +38,7 @@ public class NewMetricRequestTest
 		List<String> violationMessages = BeanValidationHelper.messagesFor(violations);
 
 		assertThat(violationMessages.size(), equalTo(2));
-		assertThat(violationMessages, hasItem("name may not be null"));
+		assertThat(violationMessages, hasItem("name must not be null"));
 		assertThat(violationMessages, hasItem("name must not be empty"));
 
 	}
@@ -66,7 +66,7 @@ public class NewMetricRequestTest
 		List<String> violationMessages = BeanValidationHelper.messagesFor(violations);
 
 		assertThat(violationMessages.size(), equalTo(2));
-		assertThat(violationMessages, hasItem("datapoints[0].value may not be null"));
+		assertThat(violationMessages, hasItem("datapoints[0].value must not be null"));
 		assertThat(violationMessages, hasItem("datapoints[0].value must not be empty"));
 
 	}

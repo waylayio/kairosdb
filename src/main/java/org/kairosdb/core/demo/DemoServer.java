@@ -18,7 +18,7 @@ import org.kairosdb.events.DataPointEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.inject.Named;
+import jakarta.inject.Named;
 import java.util.List;
 
 public class DemoServer implements KairosDBService, Runnable, KairosMetricReporter
@@ -40,7 +40,7 @@ public class DemoServer implements KairosDBService, Runnable, KairosMetricReport
 	private long m_counter = 0L;
 
 
-	@javax.inject.Inject
+	@jakarta.inject.Inject
 	@Named("HOSTNAME")
 	private String m_hostName = "none";
 

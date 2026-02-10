@@ -12,11 +12,11 @@ import org.kairosdb.rollup.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.ws.rs.*;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.Response.ResponseBuilder;
-import javax.ws.rs.core.Response.Status;
+import jakarta.ws.rs.*;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response.ResponseBuilder;
+import jakarta.ws.rs.core.Response.Status;
 import java.text.SimpleDateFormat;
 import java.util.Map;
 
@@ -24,7 +24,7 @@ import static java.util.Objects.requireNonNull;
 import static org.kairosdb.core.http.rest.MetricsResource.setHeaders;
 import static org.kairosdb.util.Preconditions.requireNonNullOrEmpty;
 
-@Path("/api/v1/rollups")
+@Path("/v1/rollups")
 public class RollUpResource
 {
 	private static final Logger logger = LoggerFactory.getLogger(MetricsResource.class);

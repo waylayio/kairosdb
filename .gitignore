@@ -8,20 +8,15 @@ build/*
 .gradle/*
 out/*
 dependency.txt
-.tablesawcache
 .idea
 log/*
 kairosdb.properties
 kairosdb_guid.properties
-lib/ivy/default/*
-lib/ivy/test/*
 .DS_Store
-myivysettings.xml
-tablesaw.properties
 kairosdb.conf
 queue
 big_array
-kairosdb_guid.properties
 
 .vscode
 .metals
+.bloop

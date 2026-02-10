@@ -5,7 +5,7 @@ import com.typesafe.config.ConfigObject;
 import com.typesafe.config.ConfigValue;
 import java.util.HashMap;
 import java.util.Map;
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 import org.kairosdb.core.KairosRootConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

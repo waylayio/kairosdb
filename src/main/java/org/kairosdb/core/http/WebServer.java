@@ -19,29 +19,40 @@ package org.kairosdb.core.http;
 import com.google.common.base.CharMatcher;
 import com.google.common.base.Splitter;
 import com.google.inject.Inject;
+import com.google.inject.Injector;
 import com.google.inject.name.Named;
-import com.google.inject.servlet.GuiceFilter;
-import org.eclipse.jetty.jaas.JAASLoginService;
-import org.eclipse.jetty.security.*;
+import org.eclipse.jetty.ee10.servlet.DefaultServlet;
+import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
+import org.eclipse.jetty.ee10.servlet.ServletHolder;
+import org.eclipse.jetty.security.Constraint;
+import org.eclipse.jetty.security.SecurityHandler;
 import org.eclipse.jetty.security.authentication.BasicAuthenticator;
+import org.eclipse.jetty.security.HashLoginService;
+import org.eclipse.jetty.security.UserStore;
 import org.eclipse.jetty.server.*;
-import org.eclipse.jetty.server.handler.DefaultHandler;
-import org.eclipse.jetty.server.handler.ErrorHandler;
-import org.eclipse.jetty.server.handler.HandlerList;
+import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.server.handler.ResourceHandler;
 import org.eclipse.jetty.server.handler.gzip.GzipHandler;
-import org.eclipse.jetty.servlet.DefaultServlet;
-import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.eclipse.jetty.servlet.ServletHolder;
-import org.eclipse.jetty.util.security.Constraint;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.ExecutorThreadPool;
+import org.glassfish.jersey.server.ResourceConfig;
+import org.glassfish.jersey.servlet.ServletContainer;
 import org.kairosdb.core.KairosDBService;
 import org.kairosdb.core.exception.KairosDBException;
+import org.kairosdb.core.health.HealthCheckResource;
+import org.kairosdb.core.http.rest.AdminResource;
+import org.kairosdb.core.http.rest.FeaturesResource;
+import org.kairosdb.core.http.rest.MetadataResource;
+import org.kairosdb.core.http.rest.MetricsResource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -75,7 +86,12 @@ public class WebServer implements KairosDBService
 	public static final String JETTY_REQUEST_LOGGING_ENABLED = "kairosdb.jetty.request_logging.enabled";
 	public static final String JETTY_REQUEST_LOGGING_RETAIN_DAYS = "kairosdb.jetty.request_logging.retain_days";
 	public static final String JETTY_REQUEST_LOGGING_IGNORE_PATHS = "kairosdb.jetty.request_logging.ignore_paths";
-
+	public static final String AUTH_PROPS_SYSTEM_PROPERTY = "kairosdb.auth.props";
+	public static final String KAIROSDB_DEFAULT_HOME = "/opt/kairosdb";
+	public static final String[] AUTH_PROPS_DEFAULT_PATHS = {
+		"conf/auth/secrets/auth.props",
+		"conf/auth/auth.props"
+	};
 
 	private InetAddress m_address;
 	private int m_port;
@@ -94,19 +110,28 @@ public class WebServer implements KairosDBService
 	private int m_requestLoggingRetainDays = LOG_RETAIN_DAYS;
 	private boolean m_requestLoggingEnabled;
 	private String[] m_loggingIgnorePaths;
+	
+	private final Injector m_injector;
 
 
 	public WebServer(int port, String webRoot)
 			throws UnknownHostException
 	{
-		this(null, port, webRoot, 120000);
+		this(null, port, webRoot, 120000, null);
+	}
+	
+	public WebServer(String address, int port, String webRoot, int idleTimeout)
+			throws UnknownHostException
+	{
+		this(address, port, webRoot, idleTimeout, null);
 	}
 
 	@Inject
 	public WebServer(@Named(JETTY_ADDRESS_PROPERTY) String address,
 			@Named(JETTY_PORT_PROPERTY) int port,
 			@Named(JETTY_WEB_ROOT_PROPERTY) String webRoot,
-			@Named(JETTY_SOCKET_IDLE_TIMEOUT) int idleTimeout)
+			@Named(JETTY_SOCKET_IDLE_TIMEOUT) int idleTimeout,
+			Injector injector)
 			throws UnknownHostException
 	{
 		requireNonNull(webRoot);
@@ -115,6 +140,7 @@ public class WebServer implements KairosDBService
 		m_webRoot = webRoot;
 		m_address = InetAddress.getByName(address);
 		m_idleTimeout = idleTimeout;
+		m_injector = injector;
 	}
 
 	@Inject(optional = true)
@@ -200,11 +226,6 @@ public class WebServer implements KairosDBService
 			else
 				m_server = new Server();
 
-			//Error handler
-			ErrorHandler errorHandler = new ErrorHandler();
-			errorHandler.setShowStacks(m_showStacktrace);
-			m_server.addBean(errorHandler);
-
 			if (m_port > 0)
 			{
 				ServerConnector http = new ServerConnector(m_server);
@@ -218,37 +239,94 @@ public class WebServer implements KairosDBService
 				initializeSSL();
 
 			ServletContextHandler servletContextHandler = new ServletContextHandler();
-			//As of Jetty 9.4 the default alias checker allows symbolic links
-
+			servletContextHandler.setContextPath("/");
+			
 			if (m_authModuleName != null)
 			{
 				servletContextHandler.setSecurityHandler(initializeAuth());
-				servletContextHandler.setContextPath("/");
 			}
 
-			servletContextHandler.addFilter(GuiceFilter.class, "/api/*", null);
-			servletContextHandler.addServlet(DefaultServlet.class, "/api/*");
-			ServletHolder servletHolder = new ServletHolder("static", DefaultServlet.class);
-			servletHolder.setInitParameter("resourceBase",m_webRoot);
-			servletHolder.setInitParameter("dirAllowed","true");
-			servletContextHandler.addServlet(servletHolder,"/");
-			servletContextHandler.setWelcomeFiles(new String[]{"index.html"});
+			// Configure Jersey with JAX-RS resources
+			ResourceConfig resourceConfig = new ResourceConfig();
+			
+			// Get resource instances from Guice injector if available
+			if (m_injector != null)
+			{
+				resourceConfig.register(new GuiceFeature(m_injector));
+				resourceConfig.register(m_injector.getInstance(MetricsResource.class));
+				resourceConfig.register(m_injector.getInstance(MetadataResource.class));
+				resourceConfig.register(m_injector.getInstance(FeaturesResource.class));
+				resourceConfig.register(m_injector.getInstance(AdminResource.class));
+				try
+				{
+					resourceConfig.register(m_injector.getInstance(HealthCheckResource.class));
+				}
+				catch (Exception e)
+				{
+					logger.debug("HealthCheckResource not available: {}", e.getMessage());
+				}
+				// Register exception mappers
+				try
+				{
+					resourceConfig.register(m_injector.getInstance(org.kairosdb.core.http.exceptionmapper.InvalidServerTypeExceptionMapper.class));
+				}
+				catch (Exception e)
+				{
+					// Mapper might not be bound
+				}
+			}
+			else
+			{
+				// Fallback: register classes for Jersey to instantiate
+				resourceConfig.register(MetricsResource.class);
+				resourceConfig.register(MetadataResource.class);
+				resourceConfig.register(FeaturesResource.class);
+				resourceConfig.register(AdminResource.class);
+				resourceConfig.register(org.kairosdb.core.http.exceptionmapper.InvalidServerTypeExceptionMapper.class);
+			}
+			
+			// Add logging filter if available
+			if (m_injector != null)
+			{
+				try
+				{
+					resourceConfig.register(m_injector.getInstance(LoggingFilter.class));
+				}
+				catch (Exception e)
+				{
+					// LoggingFilter might not be bound
+				}
+			}
+			
+			// Create Jersey servlet - serve at /api/* since resources have @Path("/v1")
+			ServletHolder jerseyServlet = new ServletHolder(new ServletContainer(resourceConfig));
+			servletContextHandler.addServlet(jerseyServlet, "/api/*");
+			
+			// Default servlet for unhandled requests
+			ServletHolder defaultServlet = new ServletHolder("default", DefaultServlet.class);
+			servletContextHandler.addServlet(defaultServlet, "/");
 
-			//adding gzip handler
 			GzipHandler gzipHandler = new GzipHandler();
-			gzipHandler.setIncludedMimeTypes("application/json");
-			gzipHandler.addIncludedMethods("GET","POST");
-			gzipHandler.setIncludedPaths("/*");
+			gzipHandler.addIncludedMimeTypes("application/json");
+			gzipHandler.addIncludedMethods("GET", "POST");
+			gzipHandler.addIncludedPaths("/*");
+			gzipHandler.setMinGzipSize(23);
+			
+			// ResourceHandler for static content
+			ResourceHandler resourceHandler = new ResourceHandler();
+			File webRootFile = new File(m_webRoot);
+			if (webRootFile.exists() && webRootFile.isDirectory())
+			{
+				resourceHandler.setBaseResource(ResourceFactory.root().newResource(webRootFile.toPath()));
+				resourceHandler.setDirAllowed(true);
+				resourceHandler.setWelcomeFiles("index.html");
+			}
 
-			//chain handlers
-			gzipHandler.setHandler(servletContextHandler);
+			// Chain handlers: gzip -> resourceHandler -> servletContext
+			gzipHandler.setHandler(resourceHandler);
+			resourceHandler.setHandler(servletContextHandler);
 
-			HandlerList handlers = new HandlerList();
-			handlers.setHandlers(new Handler[]{gzipHandler, new DefaultHandler()}); //DefaultHandler only called if other handlers aren't called.
-			m_server.setHandler(handlers);
-
-
-			//some code for logging
+			m_server.setHandler(gzipHandler);
 			if(m_requestLoggingEnabled)
 				initializeJettyRequestLogging();
 
@@ -290,7 +368,7 @@ public class WebServer implements KairosDBService
 		httpConfig.setSecurePort(m_sslPort);
 		httpConfig.addCustomizer(new SecureRequestCustomizer());
 
-		SslContextFactory sslContextFactory = new SslContextFactory.Server();
+		SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
 		sslContextFactory.setKeyStorePath(m_keyStorePath);
 		sslContextFactory.setKeyStorePassword(m_keyStorePassword);
 		if (m_trustStorePath != null && !m_trustStorePath.isEmpty())
@@ -308,39 +386,75 @@ public class WebServer implements KairosDBService
 		m_server.addConnector(https);
 	}
 
+	static File findConfigFile(String systemProperty, String[] defaultPaths, String homeEnvVar, String defaultHome)
+	{
+		String overridePath = systemProperty != null ? System.getProperty(systemProperty) : null;
+		String homeDir = homeEnvVar != null ? System.getenv(homeEnvVar) : null;
+
+		List<String> searchPaths = new ArrayList<>();
+		if (overridePath != null)
+		{
+			searchPaths.add(overridePath);
+		}
+		for (String defaultPath : defaultPaths)
+		{
+			searchPaths.add(defaultPath);
+			if (homeDir != null)
+			{
+				searchPaths.add(homeDir + "/" + defaultPath);
+			}
+			if (defaultHome != null)
+			{
+				searchPaths.add(defaultHome + "/" + defaultPath);
+			}
+		}
+
+		for (String path : searchPaths)
+		{
+			File file = new File(path);
+			if (file.exists())
+			{
+				return file;
+			}
+		}
+		return null;
+	}
+
 	private SecurityHandler initializeAuth() throws Exception
 	{
-		Constraint constraint = new Constraint();
-		constraint.setName(Constraint.__BASIC_AUTH);
-		constraint.setRoles(new String[]{Constraint.ANY_AUTH}); //authentication is all that's supported so this allows any role.
-		constraint.setAuthenticate(true);
+		SecurityHandler.PathMapped securityHandler = new SecurityHandler.PathMapped();
+		HashLoginService loginService = new HashLoginService();
+		loginService.setName(m_authModuleName);
 
-		Constraint noConstraint = new Constraint();
-
-		ConstraintMapping healthcheckConstraintMapping = new ConstraintMapping();
-		healthcheckConstraintMapping.setConstraint(noConstraint);
-		healthcheckConstraintMapping.setPathSpec("/api/v1/health/*");
-
-		ConstraintMapping cm = new ConstraintMapping();
-		cm.setConstraint(constraint);
-		cm.setPathSpec("/*");
-
-		ConstraintSecurityHandler csh = new ConstraintSecurityHandler();
-		JAASLoginService l = new JAASLoginService();
-		l.setLoginModuleName(m_authModuleName);
-		csh.addConstraintMapping(healthcheckConstraintMapping);
-		csh.addConstraintMapping(cm);
-		csh.setLoginService(l);
-		csh.setAuthenticator(new BasicAuthenticator());
-		l.start();
-		return csh;
+		File authPropsFile = findConfigFile(AUTH_PROPS_SYSTEM_PROPERTY, AUTH_PROPS_DEFAULT_PATHS, "KAIROSDB_HOME", KAIROSDB_DEFAULT_HOME);
+		
+		if (authPropsFile != null)
+		{
+			loginService.setConfig(ResourceFactory.root().newResource(authPropsFile.toPath()));
+			logger.info("Using auth properties file: {}", authPropsFile.getAbsolutePath());
+		}
+		else
+		{
+			logger.warn("No auth properties file found. Authentication will fail for all users. " +
+					"Set -D{}=<path> or create one of: {}", AUTH_PROPS_SYSTEM_PROPERTY, 
+					Arrays.toString(AUTH_PROPS_DEFAULT_PATHS));
+		}
+		
+		securityHandler.setLoginService(loginService);
+		securityHandler.setAuthenticator(new BasicAuthenticator());
+		
+		// Allow health check endpoint without authentication
+		securityHandler.put("/api/v1/health/*", Constraint.ALLOWED);
+		// Require authentication for all other paths
+		securityHandler.put("/*", Constraint.ANY_USER);
+		
+		return securityHandler;
     }
 
     private void initializeJettyRequestLogging()
 	{
 		RequestLogWriter logWriter = new RequestLogWriter("log/jetty-yyyy_mm_dd.request.log");
 		CustomRequestLog requestLog = new CustomRequestLog(logWriter, CustomRequestLog.NCSA_FORMAT);
-		//NCSARequestLog requestLog = new NCSARequestLog("log/jetty-yyyy_mm_dd.request.log");
 		logWriter.setAppend(true);
 		logWriter.setTimeZone("UTC");
 		logWriter.setRetainDays(m_requestLoggingRetainDays);

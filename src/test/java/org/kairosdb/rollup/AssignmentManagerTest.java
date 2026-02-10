@@ -27,6 +27,7 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertThrows;
 import static org.mockito.Mockito.when;
+import static org.mockito.MockitoAnnotations.openMocks;
 
 public class AssignmentManagerTest extends RollupTestBase
 {
@@ -40,6 +41,7 @@ public class AssignmentManagerTest extends RollupTestBase
     @Before
     public void setup() throws RollUpException
     {
+        openMocks(this);
         manager = new AssignmentManager(LOCAL_HOST, taskStore, assignmentStore, statusStore, mockExecutionService, mockHostManager, balancingAlgorithm, 10);
     }
 

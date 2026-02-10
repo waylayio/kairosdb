@@ -13,29 +13,33 @@
  *    See the License for the specific language governing permissions and
  *    limitations under the License.
  */
+package org.kairosdb.core.http;
 
-package org.kairosdb.core.http.rest.json;
+import com.google.inject.Injector;
+import jakarta.ws.rs.core.Feature;
+import jakarta.ws.rs.core.FeatureContext;
 
-
-import com.fasterxml.jackson.annotation.JsonCreator;
-
-import jakarta.validation.Valid;
-import java.util.Collections;
-import java.util.List;
-
-public class MetricRequestList
+/**
+ * Jersey Feature that enables Guice integration.
+ * This allows Jersey to use Guice-managed instances for JAX-RS resources.
+ */
+public class GuiceFeature implements Feature
 {
-    @Valid
-    List<NewMetricRequest> metricsRequest;
+    private final Injector injector;
 
-    @JsonCreator
-    public MetricRequestList(List<NewMetricRequest> metricsRequest)
+    public GuiceFeature(Injector injector)
     {
-        this.metricsRequest = metricsRequest;
+        this.injector = injector;
     }
 
-    public List<NewMetricRequest> getMetricsRequest()
+    @Override
+    public boolean configure(FeatureContext context)
     {
-        return Collections.unmodifiableList(metricsRequest);
+        return true;
+    }
+
+    public Injector getInjector()
+    {
+        return injector;
     }
 }

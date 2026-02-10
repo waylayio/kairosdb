@@ -1,1 +1,3 @@
-user: password
+# Format: username: password,role1,role2,...
+# Example: admin: admin123,user
+user: password,user

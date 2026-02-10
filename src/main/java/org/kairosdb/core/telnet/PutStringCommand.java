@@ -14,7 +14,7 @@ import org.kairosdb.eventbus.Publisher;
 import org.kairosdb.events.DataPointEvent;
 import org.kairosdb.util.ValidationException;
 
-import javax.inject.Named;
+import jakarta.inject.Named;
 import java.util.List;
 
 import static org.kairosdb.util.Preconditions.requireNonNullOrEmpty;

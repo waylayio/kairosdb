@@ -14,6 +14,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertThrows;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.MockitoAnnotations.openMocks;
 
 public class SchedulingManagerTest extends RollupTestBase
 {
@@ -33,6 +34,7 @@ public class SchedulingManagerTest extends RollupTestBase
 	@Before
 	public void setup() throws RollUpException
 	{
+		openMocks(this);
 		manager = new SchedulingManager(taskStore, assignmentStore, mockScheduler, mockDatastore, mockExecutionService, mockEventBus, mockStatusStore,10, LOCAL_HOST, SERVER_GUID);
 	}
 

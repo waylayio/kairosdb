@@ -1,6 +1,6 @@
 
 =============================
-KairosDB documentation v1.3.0
+KairosDB documentation v2.0.0
 =============================
 
 Contents:

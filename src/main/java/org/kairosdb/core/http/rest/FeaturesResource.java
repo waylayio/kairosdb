@@ -10,16 +10,16 @@ import org.kairosdb.core.processingstage.FeatureProcessor;
 import org.kairosdb.core.processingstage.metadata.FeatureProcessingMetadata;
 import org.kairosdb.core.processingstage.metadata.FeatureProcessorMetadata;
 
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
 
 import static org.kairosdb.core.http.rest.MetricsResource.setHeaders;
 
-@Path("/api/v1/features")
+@Path("/v1/features")
 public class FeaturesResource
 {
     private FeatureProcessor m_featureProcessor;

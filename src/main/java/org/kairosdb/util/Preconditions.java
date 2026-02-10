@@ -18,7 +18,7 @@ package org.kairosdb.util;
 
 import com.google.common.annotations.VisibleForTesting;
 
-import javax.annotation.Nullable;
+import jakarta.annotation.Nullable;
 
 import static java.util.Objects.requireNonNull;
 

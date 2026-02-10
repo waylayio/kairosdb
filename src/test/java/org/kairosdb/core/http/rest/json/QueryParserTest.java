@@ -354,7 +354,7 @@ public class QueryParserTest
 	{
 		String json = Resources.toString(Resources.getResource("invalid-query-metric-aggregators-div-no-divisor.json"), Charsets.UTF_8);
 
-		assertBeanValidation(json, "query.metric[0].aggregators[0].m_divisor may not be zero");
+		assertBeanValidation(json, "query.metric[0].aggregators[0].m_divisor must not be zero");
 	}
 
 	@Test
@@ -362,7 +362,7 @@ public class QueryParserTest
 	{
 		String json = Resources.toString(Resources.getResource("invalid-query-metric-aggregators-div-divisor-zero.json"), Charsets.UTF_8);
 
-		assertBeanValidation(json, "query.metric[0].aggregators[0].m_divisor may not be zero");
+		assertBeanValidation(json, "query.metric[0].aggregators[0].m_divisor must not be zero");
 	}
 
 	@Test
@@ -370,7 +370,7 @@ public class QueryParserTest
 	{
 		String json = Resources.toString(Resources.getResource("invalid-query-metric-aggregators-percentile-no-percentile.json"), Charsets.UTF_8);
 
-		assertBeanValidation(json, "query.metric[0].aggregators[0].percentile may not be zero");
+		assertBeanValidation(json, "query.metric[0].aggregators[0].percentile must not be zero");
 	}
 
 	@Test
@@ -378,7 +378,7 @@ public class QueryParserTest
 	{
 		String json = Resources.toString(Resources.getResource("invalid-query-metric-aggregators-percentile-percentile-zero.json"), Charsets.UTF_8);
 
-		assertBeanValidation(json, "query.metric[0].aggregators[0].percentile may not be zero");
+		assertBeanValidation(json, "query.metric[0].aggregators[0].percentile must not be zero");
 	}
 
 	@Test
@@ -427,7 +427,7 @@ public class QueryParserTest
 	{
 		String json = Resources.toString(Resources.getResource("invalid-query-metric-group_by-tag-missing-tags.json"), Charsets.UTF_8);
 
-		assertBeanValidation(json, "query.metric[0].group_by[0].tags may not be null", "query.metric[0].group_by[0].tags must not be empty");
+		assertBeanValidation(json, "query.metric[0].group_by[0].tags must not be null", "query.metric[0].group_by[0].tags must not be empty");
 	}
 
 	@Test
@@ -443,7 +443,7 @@ public class QueryParserTest
 	{
 		String json = Resources.toString(Resources.getResource("invalid-query-metric-group_by-time-missing-range_size.json"), Charsets.UTF_8);
 
-		assertBeanValidation(json, "query.metric[0].group_by[0].rangeSize may not be null");
+		assertBeanValidation(json, "query.metric[0].group_by[0].rangeSize must not be null");
 	}
 
 	@Test
@@ -491,7 +491,7 @@ public class QueryParserTest
 	{
 		String json = Resources.toString(Resources.getResource("invalid-rollup-no-execution_interval.json"), Charsets.UTF_8);
 
-		assertRollupBeanValidation(json, "executionInterval may not be null");
+		assertRollupBeanValidation(json, "executionInterval must not be null");
 	}
 
 	@Test

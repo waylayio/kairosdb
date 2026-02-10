@@ -3,7 +3,7 @@ enabled: true
 
 image:
   repository: rcosnita/kairosdb # this must be changed when we onboard kairosdb to official dockerhub repository.
-  tag: 1.3.0-3283c4e8d4d
+  tag: 2.0.0-3283c4e8d4d
   pullPolicy: IfNotPresent
 
   waitContainer:

@@ -200,7 +200,7 @@ public class TelnetServerTest
 		String tagValue = createLongString(2048);
 		m_client.sendText("put " + metricName + " " + now + " 123 host=test_host foo=bar customer=" + tagValue);
 
-		verifyZeroInteractions(m_publisher);
+		verifyNoInteractions(m_publisher);
 	}
 
 	@Test

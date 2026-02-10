@@ -23,14 +23,14 @@ import org.kairosdb.rollup.RollupTaskStatusStore;
 import org.kairosdb.util.LoggingUtils;
 import org.mockito.ArgumentCaptor;
 
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static javax.ws.rs.core.Response.Status.*;
+import static jakarta.ws.rs.core.Response.Status.*;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
@@ -316,8 +316,8 @@ public class RollUpResourceTest
 		Response response = resource.update(tasks.get(0).getId(), tasks.get(1).getJson());
 
 		@SuppressWarnings("unchecked")
-		Class<ArrayList<RollupTask>> listClass = (Class<ArrayList<RollupTask>>) (Class) ArrayList.class;
-		ArgumentCaptor<ArrayList<RollupTask>> captor = ArgumentCaptor.forClass(listClass);
+		Class<List<RollupTask>> listClass = (Class<List<RollupTask>>) (Class) List.class;
+		ArgumentCaptor<List<RollupTask>> captor = ArgumentCaptor.forClass(listClass);
 
 		verify(mockStore, times(1)).write(captor.capture());
 		List<RollupTask> modifiedTasks = captor.getValue();
