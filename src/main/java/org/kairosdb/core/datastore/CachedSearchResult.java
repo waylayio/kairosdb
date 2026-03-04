@@ -505,8 +505,6 @@ public class CachedSearchResult implements SearchResult
 		@Override
 		public DataPoint next()
 		{
-			DataPoint ret = null;
-
 			try
 			{
 				//Lazy allocation of buffer to conserve memory when using group by's
@@ -522,42 +520,52 @@ public class CachedSearchResult implements SearchResult
 					{
 						long ingestionTimestamp = m_readBuffer.readLong();
 						DataPoint baseDataPoint = m_dataPointFactory.createDataPoint(m_dataType, timestamp, m_readBuffer);
-						ret = new IngestionTimestampDataPoint(baseDataPoint, ingestionTimestamp);
+						DataPoint ret = new IngestionTimestampDataPoint(baseDataPoint, ingestionTimestamp);
+						m_dataPointsRead ++;
+						closeReadBufferIfDone();
+						return (ret);
 					}
 					else
 					{
-						ret = m_dataPointFactory.createDataPoint(m_dataType, timestamp, m_readBuffer);
+						DataPoint ret = m_dataPointFactory.createDataPoint(m_dataType, timestamp, m_readBuffer);
+						m_dataPointsRead ++;
+						closeReadBufferIfDone();
+						return (ret);
 					}
 				}
 				else
 				{
-					ret = m_dataPointFactory.createDataPoint(m_dataType, timestamp, m_readBuffer);
+					DataPoint ret = m_dataPointFactory.createDataPoint(m_dataType, timestamp, m_readBuffer);
+					m_dataPointsRead ++;
+					closeReadBufferIfDone();
+					return (ret);
 				}
-
 			}
 			catch (IOException ioe)
 			{
-				logger.error("Error reading next data point.", ioe);
+				throw new IllegalStateException("Error reading next data point for metric '" + m_metricName + "'", ioe);
 			}
+		}
 
-			m_dataPointsRead ++;
-
-			//Clean up buffer.  In cases where we are grouping not all rows are read
-			//at once so this will save memory
-			if (m_dataPointsRead == m_dataPointCount)
+		private void closeReadBufferIfDone()
+		{
+			//Clean up buffer. In cases where we are grouping not all rows are read
+			//at once so this will save memory.
+			if (m_dataPointsRead == m_dataPointCount && m_readBuffer != null)
 			{
 				try
 				{
 					m_readBuffer.close();
+				}
+				catch (IOException ioe)
+				{
+					logger.warn("Unable to close cached datapoint read buffer for metric '{}'", m_metricName, ioe);
+				}
+				finally
+				{
 					m_readBuffer = null;
 				}
-				catch (IOException e)
-				{
-					e.printStackTrace();
-				}
 			}
-
-			return (ret);
 		}
 
 		@Override
