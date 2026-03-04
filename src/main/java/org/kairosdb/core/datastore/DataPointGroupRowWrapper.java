@@ -73,6 +73,10 @@ public class DataPointGroupRowWrapper implements DataPointGroup
 	public DataPoint next()
 	{
 		DataPoint dp = m_row.next();
+		if (dp == null)
+		{
+			throw new IllegalStateException("DataPointRow returned null DataPoint for metric '" + m_row.getName() + "'");
+		}
 		dp.setDataPointGroup(this);
 		return (dp);
 	}
