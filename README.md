@@ -1,5 +1,5 @@
 ![KairosDB](webroot/img/kairosdb.png)
-[![Build Status](https://travis-ci.org/kairosdb/kairosdb.svg?branch=develop)](https://travis-ci.org/kairosdb/kairosdb)
+[![Build](https://github.com/waylayio/kairosdb/actions/workflows/build.yml/badge.svg?branch=2.0.0-waylay)](https://github.com/waylayio/kairosdb/actions/workflows/build.yml?query=branch%3A2.0.0-waylay)
 
 KairosDB is a fast distributed scalable time series database written on top of Cassandra.
 
