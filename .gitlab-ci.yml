@@ -1,0 +1,42 @@
+workflow:
+  rules:
+    - if: $CI_COMMIT_TAG
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+    - if: $CI_COMMIT_BRANCH == "2.0.0-waylay"
+    - if: $CI_COMMIT_BRANCH == "1.3.0-waylay"
+    - if: $CI_COMMIT_BRANCH == "waylay"
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_PIPELINE_SOURCE == "web"
+
+variables:
+  CASSANDRA_HOST: cassandra
+  CASSANDRA_START_RPC: "true"
+  MAVEN_OPTS: "-Dhttps.protocols=TLSv1.2"
+
+stages:
+  - test
+
+test:
+  stage: test
+  image: maven:3.9-eclipse-temurin-25
+  tags:
+    - gsp-privileged
+  services:
+    - name: cassandra:3.11
+      alias: cassandra
+  rules:
+    - when: on_success
+  before_script:
+    - |
+      echo "Waiting for Cassandra on ${CASSANDRA_HOST}:9042..."
+      for i in $(seq 1 60); do
+        if (echo > "/dev/tcp/${CASSANDRA_HOST}/9042") >/dev/null 2>&1; then
+          echo "Cassandra port is open."
+          break
+        fi
+        sleep 5
+      done
+      # Give C* a bit more time after the port opens.
+      sleep 20
+  script:
+    - mvn clean test

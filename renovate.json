@@ -1,0 +1,33 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended"],
+  "enabledManagers": ["maven", "gitlabci"],
+  "prConcurrentLimit": 100,
+  "lockFileMaintenance": {
+    "enabled": false
+  },
+  "packageRules": [
+    {
+      "description": "Maven dependency updates weekly on Monday",
+      "matchManagers": ["maven"],
+      "schedule": ["on monday"]
+    },
+    {
+      "groupName": "jackson-packages",
+      "matchPackageNames": ["com.fasterxml.jackson.**"]
+    },
+    {
+      "groupName": "jetty-packages",
+      "matchPackageNames": ["org.eclipse.jetty.**"]
+    },
+    {
+      "groupName": "jersey-packages",
+      "matchPackageNames": ["org.glassfish.jersey.**"]
+    },
+    {
+      "description": "GitLab CI dependency updates weekly on Thursday",
+      "matchManagers": ["gitlabci"],
+      "schedule": ["on thursday"]
+    }
+  ]
+}
